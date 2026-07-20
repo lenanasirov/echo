@@ -1,8 +1,8 @@
+import Hero from "../components/landing/Hero";
+
 function Home() {
   return (
-    <div>
-      <h1>Echo Home</h1>
-    </div>
+    <Hero />
   );
 }
 
