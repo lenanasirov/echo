@@ -89,7 +89,17 @@ function Hero() {
           </p>
 
 
-          <div className="mt-8 flex items-center gap-6">
+          <div     
+            className="
+              mt-8
+              flex
+              flex-col
+              gap-4
+              sm:flex-row
+              sm:items-center
+              sm:gap-6
+            "
+          >
             <Button>
               Start Echoing
             </Button>

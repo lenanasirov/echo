@@ -18,8 +18,10 @@ function FinalCTA() {
                     absolute
                     left-1/2
                     top-1/2
-                    h-[500px]
-                    w-[500px]
+                    h-72
+                    w-72
+                    md:h-[500px]
+                    md:w-[500px]
                     -translate-x-1/2
                     -translate-y-1/2
                     rounded-full

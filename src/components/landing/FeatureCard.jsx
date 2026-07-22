@@ -10,7 +10,8 @@ function FeatureCard ({ icon, title, description }) {
                 border
                 border-white/10
                 bg-[#15151D]
-                p-8
+                p-6
+                md:p-8
                 transition-all
                 duration-300
                 hover:-translate-y-2
