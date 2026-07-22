@@ -1,5 +1,6 @@
 import Button from "../common/Button";
-
+import { motion } from "framer-motion";
+import MomentCard from "../moment/MomentCard";
 
 function Hero() {
   return (
@@ -11,8 +12,32 @@ function Hero() {
       overflow-hidden
       px-8
     ">
+        
+        <div className="
+            absolute
+            left-20
+            top-20
+            h-72
+            w-72
+            rounded-full
+            bg-purple-600/20
+            blur-3xl
+        "/>
+
+        <div className="
+            absolute
+            bottom-10
+            right-20
+            h-80
+            w-80
+            rounded-full
+            bg-pink-500/20
+            blur-3xl
+        "/>
 
       <div className="
+        relative
+        z-10
         mx-auto
         grid
         max-w-7xl
@@ -23,17 +48,33 @@ function Hero() {
       ">
 
         {/* Text Side */}
-        <div>
+        <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+                duration: 0.8
+            }}
+        >
 
           <h1 className="
             text-5xl
-            font-bold
-            leading-tight
             md:text-7xl
+            font-extrabold
+            leading-tight
+            tracking-tight
           ">
             Every moment
             <br />
-            has a soundtrack.
+            <span className="
+                bg-gradient-to-r
+                from-purple-400
+                to-pink-400
+                bg-clip-text
+                text-transparent
+            ">
+                has a soundtrack.
+            </span>
+
           </h1>
 
 
@@ -43,29 +84,48 @@ function Hero() {
             text-lg
             text-zinc-400
           ">
-            Capture your memories through music,
-            photos, and emotions.
+            Turn everyday moments into lasting memories through music, emotion, and photography.
           </p>
 
 
-          <div className="mt-8">
+          <div className="mt-8 flex items-center gap-6">
             <Button>
               Start Echoing
             </Button>
+
+            <a
+            href="#why-echo"
+            className="
+                font-medium
+                text-zinc-400
+                transition-colors
+                duration-300
+                hover:text-white
+            "
+            >
+            Learn More →
+            </a>
           </div>
 
-        </div>
+        </motion.div>
 
 
         {/* Preview Side */}
-        <div className="
-          flex
-          justify-center
-        ">
+        <motion.div className="
+            flex
+            justify-center
+            "
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+                delay: 0.2,
+                duration: 0.8
+            }}
+        >
 
-          <MomentPreview />
+          <MomentCard />
 
-        </div>
+        </motion.div>
 
 
       </div>
@@ -73,67 +133,5 @@ function Hero() {
     </section>
   );
 }
-
-
-function MomentPreview() {
-
-  return (
-    <div className="
-      w-80
-      rounded-3xl
-      bg-[#15151D]
-      p-5
-      shadow-2xl
-    ">
-
-      <div className="
-        h-64
-        rounded-2xl
-        bg-gradient-to-br
-        from-purple-500
-        to-pink-500
-        flex
-        items-center
-        justify-center
-        text-6xl
-      ">
-        📸
-      </div>
-
-
-      <div className="mt-5">
-
-        <h3 className="text-xl font-semibold">
-          Space Song
-        </h3>
-
-        <p className="text-zinc-400">
-          Beach House
-        </p>
-
-
-        <div className="
-          mt-4
-          flex
-          justify-between
-          text-sm
-        ">
-
-          <span>
-            🌙 Nostalgic
-          </span>
-
-          <span>
-            ❤️ 12
-          </span>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
-}
-
 
 export default Hero;
