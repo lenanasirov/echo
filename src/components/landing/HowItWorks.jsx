@@ -1,10 +1,15 @@
 import SectionTitle from "../common/SectionTitle";
 import StepCard from "./StepCard";
+import {
+    FiMusic,
+    FiCamera,
+    FiHeart
+} from "react-icons/fi";
 
 const steps = [
     {
         number: "01",
-        icon: "🎵",
+        icon: FiMusic,
         title: "Choose a song",
         description:
             "Pick the song that represents how you feel in this moment."
@@ -12,7 +17,7 @@ const steps = [
     
     {
         number: "02",
-        icon: "📸",
+        icon: FiCamera,
         title: "Capture a moment",
         description:
             "Add a photo and a thought that preserves the memory."
@@ -20,7 +25,7 @@ const steps = [
 
     {
         number: "03",
-        icon: "💜",
+        icon: FiHeart,
         title: "Share your memory",
         description:
             "Connect with friends through authentic moments and emotions."

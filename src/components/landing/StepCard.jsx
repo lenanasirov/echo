@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 
 function StepCard ({ number, icon, title, description }) {
+    const Icon = icon;
+
     return (
         <motion.div
             initial={{
@@ -49,7 +51,7 @@ function StepCard ({ number, icon, title, description }) {
                 shadow-purple-500/30
             "
         >
-                {icon}
+                <Icon />
             </motion.div>
 
             <span

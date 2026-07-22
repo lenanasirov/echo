@@ -1,6 +1,7 @@
 import Button from "../common/Button";
 import { motion } from "framer-motion";
 import MomentCard from "../moment/MomentCard";
+import { FiArrowRight } from "react-icons/fi";
 
 function Hero() {
   return (
@@ -94,16 +95,20 @@ function Hero() {
             </Button>
 
             <a
-            href="#why-echo"
-            className="
+              href="#why-echo"
+              className="
+                flex
+                items-center
+                gap-2
                 font-medium
                 text-zinc-400
                 transition-colors
                 duration-300
                 hover:text-white
-            "
+              "
             >
-            Learn More →
+              Learn More 
+              <FiArrowRight />
             </a>
           </div>
 

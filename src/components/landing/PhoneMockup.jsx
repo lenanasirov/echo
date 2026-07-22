@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { FiBattery } from "react-icons/fi";
 
 const screens = {
     memory: {
@@ -170,7 +171,7 @@ function PhoneMockup ({ type, title, delay = 0 }) {
                             />
 
                             <span>
-                                🔋
+                                <FiBattery />
                             </span>
                         </div>
 

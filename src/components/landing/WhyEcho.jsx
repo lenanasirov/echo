@@ -1,23 +1,28 @@
 import SectionTitle from "../common/SectionTitle";
 import FeatureCard from "./FeatureCard";
+import {
+    FiMusic,
+    FiCamera,
+    FiHeart
+} from "react-icons/fi";
 
 const features = [
   {
-    icon: "🎵",
+    icon: FiMusic,
     title: "Music remembers",
     description:
       "Every song carries a story. Connect your favorite tracks with the moments they represent."
   },
 
   {
-    icon: "📸",
+    icon: FiCamera,
     title: "Capture the real",
     description:
       "Share authentic moments instead of creating a perfect online version of yourself."
   },
 
   {
-    icon: "💜",
+    icon: FiHeart,
     title: "Feel connected",
     description:
       "Discover the emotions and memories behind the music your friends share."

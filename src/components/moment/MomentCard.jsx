@@ -1,3 +1,8 @@
+import {
+    FiHeart,
+    FiMessageCircle
+} from "react-icons/fi";
+
 function MomentCard() {
   return (
     <div
@@ -75,12 +80,14 @@ function MomentCard() {
           text-sm
           text-zinc-400
         ">
-          <span>
-            ❤️ 12
+          <span className="flex items-center gap-1">
+            <FiHeart />
+            12
           </span>
 
-          <span>
-            💬 3
+          <span className="flex items-center gap-1">
+            <FiMessageCircle />
+            3
           </span>
         </div>
 
