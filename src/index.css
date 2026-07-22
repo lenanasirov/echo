@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer components {
+    .footer-link {
+        @apply cursor-pointer text-zinc-400 transition-colors duration-300 hover:text-white;
+    }
+}
+
 html {
   font-family: "Inter", sans-serif;
 }
@@ -8,3 +14,4 @@ body {
   margin: 0;
   background: #0B0B10;
 }
+
