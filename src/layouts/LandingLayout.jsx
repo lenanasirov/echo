@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/layout/Navbar";
+import LandingNavbar from "../components/layout/LandingNavbar";
 
-function MainLayout() {
+function LandingLayout() {
   return (
     <div className="min-h-screen bg-[#0B0B10] text-white">
-      <Navbar />
+      <LandingNavbar />
 
       <main>
         <Outlet />
@@ -13,4 +13,4 @@ function MainLayout() {
   );
 }
 
-export default MainLayout;
+export default LandingLayout;

@@ -34,7 +34,10 @@ const steps = [
 
 function HowItWorks () {
     return (
-        <section className="px-8 py-24">
+        <section 
+            id="how-it-works"
+            className="px-8 py-24"
+        >
 
             <SectionTitle
                 title="How Echo works"
