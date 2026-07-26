@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import Button from "../common/Button";
+import { Link } from "react-router-dom";
 
 function FinalCTA() {
     return(
@@ -108,9 +109,12 @@ function FinalCTA() {
                             scale: 1.05
                         }}
                     >
-                        <Button>
-                            Join Echo
-                        </Button>
+                        <Link to="/feed">
+                            <Button>
+                                Join Echo
+                            </Button>
+                        </Link>
+
 
                     </motion.div>
 

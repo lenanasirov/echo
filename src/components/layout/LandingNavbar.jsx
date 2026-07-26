@@ -43,7 +43,7 @@ function LandingNavbar() {
 
         <Link to="/feed">
           <Button>
-            Get Started
+            Join Echo
           </Button>
         </Link>
 

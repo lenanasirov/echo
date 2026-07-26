@@ -8,7 +8,7 @@ function Button({ children, className = "" }) {
         to-pink-500
         px-6
         py-3
-        font-semibold
+        font-medium
         text-white
         shadow-lg
         transition

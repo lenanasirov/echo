@@ -1,5 +1,5 @@
 import Logo from "../common/Logo";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 
 function AppNavbar() {
@@ -27,17 +27,53 @@ function AppNavbar() {
                 "
             >
 
-                <Link to="/feed">
+                <NavLink 
+                    to="/feed"
+                    className={({ isActive }) =>
+                        `
+                        transition
+                        ${
+                            isActive
+                            ? "text-white"
+                            : "text-zinc-400 hover:text-white"
+                        }
+                        `
+                    }
+                >
                     Feed
-                </Link>
+                </NavLink>
 
-                <Link to="/create">
+                <NavLink 
+                    to="/create"
+                    className={({ isActive }) =>
+                        `
+                        transition
+                        ${
+                            isActive
+                            ? "text-white"
+                            : "text-zinc-400 hover:text-white"
+                        }
+                        `
+                    }
+                >
                     Create Memory
-                </Link>
+                </NavLink>
 
-                <Link to="/profile">
+                <NavLink 
+                    to="/profile"
+                    className={({ isActive }) =>
+                        `
+                        transition
+                        ${
+                            isActive
+                            ? "text-white"
+                            : "text-zinc-400 hover:text-white"
+                        }
+                        `
+                    }
+                >
                     Profile
-                </Link>
+                </NavLink>
 
             </div>
 

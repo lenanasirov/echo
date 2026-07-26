@@ -1,7 +1,9 @@
 import Button from "../common/Button";
-import { motion } from "framer-motion";
 import MomentCard from "../moment/MomentCard";
+
+import { motion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
+import { Link } from "react-router-dom";
 
 function Hero() {
   return (
@@ -100,9 +102,11 @@ function Hero() {
               sm:gap-6
             "
           >
-            <Button>
-              Start Echoing
-            </Button>
+            <Link to="/feed">
+              <Button>
+                Start Echoing
+              </Button>
+            </Link>
 
             <a
               href="#why-echo"
