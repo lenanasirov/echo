@@ -1,5 +1,10 @@
+import { Link } from "react-router-dom";
+import { FiPlus } from "react-icons/fi";
+import { motion } from "framer-motion";
+
 import MemoryCard from "../components/memory/MemoryCard";
 import memories from "../data/mockMemories";
+
 
 function Feed() {
     return (
@@ -7,6 +12,7 @@ function Feed() {
             className="
                 px-8
                 py-12
+                md:py-16
             "
         >
 
@@ -17,6 +23,7 @@ function Feed() {
                 "
             >
 
+                {/* Header */}
                 <div
                     className="
                         flex
@@ -51,26 +58,33 @@ function Feed() {
 
                     </div>
 
-
-                    <div
+                    <Link
+                        to="/create"
                         className="
                             hidden
-                            rounded-2xl
-                            border
-                            border-white/10
-                            bg-[#15151D]
+                            md:flex
+                            items-center
+                            gap-2
+                            rounded-full
+                            bg-gradient-to-r
+                            from-purple-500
+                            to-pink-500
                             px-5
                             py-3
                             text-sm
-                            text-zinc-300
-                            md:block
+                            font-medium
+                            transition
+                            hover:scale-105
                         "
                     >
-                        🎵 3 Memories Today
-                    </div>
+                        <FiPlus />
+
+                        New Memory
+                    </Link>
 
                 </div>
 
+                {/* Memories */}
                 <div
                     className="
                         mt-12
@@ -78,8 +92,22 @@ function Feed() {
                     "
                 >
                     
-                    {memories.map((memory) => (
-                        <MemoryCard key={memory.id} memory={memory} />
+                    {memories.map((memory, index) => (
+                        <motion.div
+                            key={memory.id}
+                            initial={{
+                                opacity: 0,
+                                y: 30
+                            }}
+                            animate={{
+                                opacity: 1,
+                                y: 0
+                            }}
+                            transition={{
+                                delay: index * 0.15
+                            }}>
+                            <MemoryCard  memory={memory} />
+                        </motion.div>    
                     ))}
 
                 </div>
