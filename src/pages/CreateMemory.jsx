@@ -1,10 +1,12 @@
 import { useState } from "react";
 import Button from "../components/common/Button";
+import SongSelector from "../components/memory/SongSelector";
 
 function CreateMemory() {
     const [selectedMood, setSelctedMood] = useState("");
     const [caption, setCaption] = useState("");
     const [image, setImage] = useState(null);
+    const [selectedSong, setSelectedSong] = useState(null);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -134,28 +136,8 @@ function CreateMemory() {
                             Song
                         </label>
 
-
-                        <div
-                            className="
-                                mt-3
-                                rounded-2xl
-                                border
-                                border-white/10
-                                bg-black/20
-                                p-4
-                            "
-                        >
-
-                            <h3 className="font-semibold">
-                                Space Song
-                            </h3>
-
-                            <p className="text-zinc-400">
-                                Beach House
-                            </p>
-
-                        </div>
-
+                        <SongSelector selectedSong={selectedSong} setSelectedSong={setSelectedSong} />
+                        
                     </div>
 
                     <div className="mt-8">
