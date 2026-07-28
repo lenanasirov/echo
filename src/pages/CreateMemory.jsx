@@ -3,6 +3,7 @@ import Button from "../components/common/Button";
 
 function CreateMemory() {
     const [selectedMood, setSelctedMood] = useState("");
+    const [caption, setCaption] = useState("");
 
     const moods = [
                 "😊 Happy",
@@ -180,7 +181,10 @@ function CreateMemory() {
 
 
                         <textarea
+                            value={caption}
+                            onChange={(e) => setCaption(e.target.value)}
                             placeholder="What makes this moment special?"
+                            maxLength={150}
                             className="
                                 mt-3
                                 h-32
@@ -198,6 +202,17 @@ function CreateMemory() {
                                 focus:border-purple-500
                             "
                         />
+
+                        <div
+                            className="
+                                mt-2
+                                text-right
+                                text-sm
+                                text-zinc-500
+                            "
+                        >
+                            {caption.length}/150
+                        </div>
 
                     </div>
 
