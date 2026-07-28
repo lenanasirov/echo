@@ -1,6 +1,16 @@
+import { useState } from "react";
 import Button from "../components/common/Button";
 
 function CreateMemory() {
+    const [selectedMood, setSelctedMood] = useState("");
+
+    const moods = [
+                "😊 Happy",
+                "🌙 Nostalgic",
+                "🔥 Energetic",
+                "💙 Calm"
+    ];
+
     return (
         <section
             className="
@@ -129,26 +139,24 @@ function CreateMemory() {
                             "
                         >
 
-                            {[
-                                "😊 Happy",
-                                "🌙 Nostalgic",
-                                "🔥 Energetic",
-                                "💙 Calm"
-                            ].map((mood) => (
+                            {moods.map((mood) => (
 
                                 <button
+                                    onClick={() => setSelctedMood(mood)}
                                     key={mood}
-                                    className="
+                                    className={`
                                         rounded-full
-                                        border
-                                        border-white/10
                                         px-4
                                         py-2
                                         text-sm
-                                        text-zinc-300
                                         transition
-                                        hover:border-purple-500
-                                    "
+
+                                        ${
+                                            selectedMood === mood
+                                            ? "bg-purple-500 text-white"
+                                            : "border border-white/10 text-zinc-300 hover:border-purple-500"
+                                        }
+                                    `}
                                 >
                                     {mood}
                                 </button>
