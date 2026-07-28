@@ -1,8 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import Button from "../components/common/Button";
 import SongSelector from "../components/memory/SongSelector";
 
-function CreateMemory() {
+function CreateMemory({ memories, setMemories }) {
+    const navigate= useNavigate();
+
     const [selectedMood, setSelctedMood] = useState("");
     const [caption, setCaption] = useState("");
     const [image, setImage] = useState(null);
@@ -14,6 +18,31 @@ function CreateMemory() {
         if (file) {
             setImage(URL.createObjectURL(file));
         }
+    };
+
+    const handleSave = () => {
+
+        const newMemory = {
+            id: Date.now(),
+            user: {
+                name: "Lena",
+                avatar: "🌸"
+            },
+            image,
+            song: selectedSong,
+            mood: selectedMood,
+            caption,
+            location: "Ashdod, Israel",
+            likes: 0,
+            comments: 0
+        };
+
+        setMemories([
+            newMemory, 
+            ...memories
+        ]);;
+
+        navigate("/feed");
     };
 
     const moods = [
@@ -137,7 +166,7 @@ function CreateMemory() {
                         </label>
 
                         <SongSelector selectedSong={selectedSong} setSelectedSong={setSelectedSong} />
-                        
+
                     </div>
 
                     <div className="mt-8">
@@ -284,7 +313,7 @@ function CreateMemory() {
                         "
                     >
 
-                        <Button>
+                        <Button onClick={handleSave}>
                             Save Memory
                         </Button>
 

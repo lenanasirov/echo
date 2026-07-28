@@ -1,6 +1,7 @@
-function Button({ children, className = "" }) {
+function Button({ children, className = "", ...props }) {
   return (
     <button
+      {...props}
       className={`
         rounded-full
         bg-linear-to-r

@@ -66,13 +66,13 @@ function MemoryCard({ memory }) {
                             text-xl
                         "
                     >
-                        {memory.user.avatar}
+                        {memory.user?.avatar}
                     </motion.div>
 
                     <div>
 
                         <h3 className="font-semibold">
-                            {memory.user.name}
+                            {memory.user?.name}
                         </h3>
 
                         <p className="

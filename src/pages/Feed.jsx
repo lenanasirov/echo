@@ -3,10 +3,8 @@ import { FiPlus } from "react-icons/fi";
 import { motion } from "framer-motion";
 
 import MemoryCard from "../components/memory/MemoryCard";
-import memories from "../data/mockMemories";
 
-
-function Feed() {
+function Feed({ memories }) {
     return (
         <section
             className="
