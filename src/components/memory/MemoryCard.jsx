@@ -59,7 +59,7 @@ function MemoryCard({ memory }) {
                             items-center
                             justify-center
                             rounded-full
-                            bg-gradient-to-br
+                            bg-linear-to-br
                             from-purple-500
                             to-pink-500
                             text-white
@@ -115,14 +115,14 @@ function MemoryCard({ memory }) {
                         object-cover
                     "
                 />
-                
+
                 {/* Image overlay */}
                 <div
                     className="
                         pointer-events-none
                         absolute
                         inset-0
-                        bg-gradient-to-t
+                        bg-linear-to-t
                         from-black/20
                         to-transparent
                     "

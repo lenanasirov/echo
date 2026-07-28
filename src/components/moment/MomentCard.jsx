@@ -22,7 +22,7 @@ function MomentCard() {
         className="
           h-64
           rounded-2xl
-          bg-gradient-to-br
+          bg-linear-to-br
           from-purple-500
           to-pink-500
           flex

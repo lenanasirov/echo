@@ -66,7 +66,7 @@ function Feed() {
                             items-center
                             gap-2
                             rounded-full
-                            bg-gradient-to-r
+                            bg-linear-to-r
                             from-purple-500
                             to-pink-500
                             px-5

@@ -21,8 +21,8 @@ function FinalCTA() {
                     top-1/2
                     h-72
                     w-72
-                    md:h-[500px]
-                    md:w-[500px]
+                    md:h-125
+                    md:w-125
                     -translate-x-1/2
                     -translate-y-1/2
                     rounded-full
@@ -69,7 +69,7 @@ function FinalCTA() {
 
                         <span
                             className="
-                                bg-gradient-to-r
+                                bg-linear-to-r
                                 from-purple-400
                                 to-pink-400
                                 bg-clip-text

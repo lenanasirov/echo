@@ -72,7 +72,7 @@ function Footer() {
 
                         <h3
                             className="
-                                bg-gradient-to-r
+                                bg-linear-to-r
                                 from-purple-400
                                 to-pink-400
                                 bg-clip-text

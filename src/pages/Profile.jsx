@@ -47,7 +47,7 @@ function Profile() {
                           items-center
                           justify-center
                           rounded-full
-                          bg-gradient-to-br
+                          bg-linear-to-br
                           from-purple-500
                           to-pink-500
                           text-5xl

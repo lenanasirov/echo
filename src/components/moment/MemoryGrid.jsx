@@ -56,7 +56,7 @@ function MemoryGrid({ memories }) {
                             inset-0
                             flex
                             items-end
-                            bg-gradient-to-t
+                            bg-linear-to-t
                             from-black/60
                             to-transparent
                             p-4

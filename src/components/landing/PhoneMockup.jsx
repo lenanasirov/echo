@@ -122,12 +122,12 @@ function PhoneMockup ({ type, title, delay = 0 }) {
 
                     className="
                         relative
-                        h-[560px]
+                        h-140
                         w-72
                         rounded-[40px]
                         border
                         border-white/20
-                        bg-gradient-to-b
+                        bg-linear-to-b
                         from-zinc-800
                         to-black
                         p-3
@@ -140,7 +140,7 @@ function PhoneMockup ({ type, title, delay = 0 }) {
                     <div
                         className="
                             h-full
-                            rounded-[32px]
+                            rounded-4xl
                             bg-black/80
                             p-5
                             backdrop-blur-xl
@@ -186,7 +186,7 @@ function PhoneMockup ({ type, title, delay = 0 }) {
                                         items-center
                                         justify-center
                                         rounded-2xl
-                                        bg-gradient-to-br
+                                        bg-linear-to-br
                                         from-purple-500
                                         to-pink-500
                                         text-6xl
@@ -420,7 +420,7 @@ function PhoneMockup ({ type, title, delay = 0 }) {
                                         items-center
                                         justify-center
                                         rounded-2xl
-                                        bg-gradient-to-br
+                                        bg-linear-to-br
                                         from-purple-500
                                         to-pink-500
                                         text-5xl

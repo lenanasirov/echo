@@ -3,7 +3,7 @@ function Button({ children, className = "" }) {
     <button
       className={`
         rounded-full
-        bg-gradient-to-r
+        bg-linear-to-r
         from-purple-500
         to-pink-500
         px-6
