@@ -4,6 +4,15 @@ import Button from "../components/common/Button";
 function CreateMemory() {
     const [selectedMood, setSelctedMood] = useState("");
     const [caption, setCaption] = useState("");
+    const [image, setImage] = useState(null);
+
+    const handleImageChange = (event) => {
+        const file = event.target.files[0];
+
+        if (file) {
+            setImage(URL.createObjectURL(file));
+        }
+    };
 
     const moods = [
                 "😊 Happy",
@@ -56,33 +65,63 @@ function CreateMemory() {
                     "
                 >
 
-                <div
+                <label
                     className="
                         flex
                         h-72
                         cursor-pointer
-                        flex-col
                         items-center
                         justify-center
+                        overflow-hidden
                         rounded-2xl
                         border
                         border-dashed
                         border-white/20
                         bg-black/20
-                        text-zinc-400
                         transition
                         hover:border-purple-500
                     "
                 >
-                    <span className="text-5xl">
-                        📸
-                    </span>
+                    {
+                        image ? (
+                            <img 
+                                src={image}
+                                alt="Preview"
+                                className="
+                                    h-full
+                                    w-full
+                                    object-cover
+                                "
 
-                    <span className="mt-3">
-                        Add a photo
-                    </span>
+                            />
+                        ) : (
+                            <div
+                                className="
+                                    flex
+                                    flex-col
+                                    items-center
+                                    text-zinc-400
+                                "
+                            >
+                                <span className="text-5xl">
+                                    📸
+                                </span>
 
-                </div> 
+                                <span className="mt-3">
+                                    Add a photo
+                                </span>
+                            </div>
+                        )
+                    }
+
+                    <input 
+                        type="file"
+                        accept="image/"
+                        onChange={handleImageChange}
+                        className="hidden"
+                    />
+
+                </label> 
 
                     <div className="mt-8">
 
