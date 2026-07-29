@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
 import CreateMemory from "./pages/CreateMemory";
 import mockMemories from "./data/mockMemories";
+import MemoryDetails from "./pages/MemoryDetails";
 
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/feed" element={<Feed memories={memories}/>} />
           <Route path="/create" element={<CreateMemory memories={memories} setMemories={setMemories} />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/memory/:id" element={<MemoryDetails memories={memories} />} />``
         </Route>
 
         {/* Authentication */}

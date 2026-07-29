@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
     FiHeart,
     FiMessageCircle,
@@ -7,8 +8,10 @@ import {
 } from "react-icons/fi";
 
 function MemoryCard({ memory }) {
+    const navigate = useNavigate();
     return(
         <motion.article
+            onClick={() => navigate(`/memory/${memory.id}`)}
             initial={{
                 opacity: 0,
                 y: 30
@@ -21,6 +24,7 @@ function MemoryCard({ memory }) {
                 duration: 0.4
             }}
             className="
+                cursor-pointer
                 overflow-hidden
                 rounded-3xl
                 border

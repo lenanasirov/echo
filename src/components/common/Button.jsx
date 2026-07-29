@@ -22,7 +22,7 @@ function Button({ children, className = "", disabled=false , ...props }) {
                 shadow-none
               `
             : `
-                bg-gradient-to-r
+                bg-linear-to-r
                 from-purple-500
                 to-pink-500
                 hover:scale-105
