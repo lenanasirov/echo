@@ -1,16 +1,19 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import CommentsSection from "../components/memory/CommentsSection";
 
 import {
     FiHeart,
     FiMessageCircle,
-    FiMapPin
+    FiMapPin,
+    FiArrowLeft
 } from "react-icons/fi";
 
 
 function MemoryDetails({ memories }) {
+    const navigate = useNavigate();
     const { id } = useParams();
     const [liked, setLiked] = useState(false);
 
@@ -42,10 +45,34 @@ function MemoryDetails({ memories }) {
             className="
                 mx-auto
                 max-w-4xl
-                px-8
-                py-12
+                px-6
+                py-10
+                lg:px-8
             "
         >
+            <button
+                onClick={() => navigate(-1)}
+                className="
+                    mb-8
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    border
+                    border-white/10
+                    bg-white/5
+                    px-4
+                    py-2
+                    text-sm
+                    text-zinc-400
+                    transition
+                    hover:border-purple-500
+                    hover:text-white
+                "
+            >
+                <FiArrowLeft className="text-lg" />
+                Back
+            </button>
 
             {/* Image */}
             <div
@@ -61,9 +88,12 @@ function MemoryDetails({ memories }) {
                     src={memory.image}
                     alt={memory.caption}
                     className="
-                        h-125
+                        h-115
                         w-full
                         object-cover
+                        transition
+                        duration-500
+                        hover:scale-[1.02]
                     "
                 />
 
@@ -75,38 +105,56 @@ function MemoryDetails({ memories }) {
                     mt-8
                     flex
                     items-center
-                    gap-3
+                    justify-between
                 "
             >
 
                 <div
                     className="
-                        text-3xl
+                        flex
+                        items-center
+                        gap-4
                     "
                 >
-                    {memory.user.avatar}
-                </div>
 
-
-                <div>
-
-                    <h2
+                    <div
                         className="
-                            font-semibold
+                            flex
+                            h-12
+                            w-12
+                            items-center
+                            justify-center
+                            rounded-full
+                            bg-linear-to-r
+                            from-purple-500
+                            to-pink-500
+                            text-2xl
                         "
                     >
-                        {memory.user.name}
-                    </h2>
+                        {memory.user.avatar}
+                    </div>
 
+                    <div>
 
-                    <p
-                        className="
-                            text-sm
-                            text-zinc-500
-                        "
-                    >
-                        {memory.date}
-                    </p>
+                        <h2
+                            className="
+                                text-xl
+                                font-semibold
+                            "
+                        >
+                            {memory.user.name}
+                        </h2>
+
+                        <p
+                            className="
+                                text-sm
+                                text-zinc-500
+                            "
+                        >
+                            {memory.date}
+                        </p>
+
+                    </div>
 
                 </div>
 
@@ -115,9 +163,11 @@ function MemoryDetails({ memories }) {
             {/* Caption */}
             <p
                 className="
-                    mt-8
-                    text-xl
+                    mt-10
+                    text-2xl
+                    font-medium
                     leading-relaxed
+                    tracking-tight
                 "
             >
                 {memory.caption}
@@ -126,29 +176,33 @@ function MemoryDetails({ memories }) {
             {/* Song */}
             <div
                 className="
-                    mt-8
-                    rounded-2xl
+                    mt-10
+                    rounded-3xl
                     border
                     border-white/10
-                    bg-white/5
-                    p-5
+                    bg-linear-to-br
+                    from-white/5
+                    to-white/2
+                    p-6
                 "
             >
 
                 <p
                     className="
-                        text-sm
-                        text-zinc-400
+                        text-xs
+                        uppercase
+                        tracking-[0.25em]
+                        text-zinc-500
                     "
                 >
-                    Playing now
+                    Soundtrack
                 </p>
 
 
                 <h3
                     className="
-                        mt-2
-                        text-lg
+                        mt-3
+                        text-xl
                         font-semibold
                     "
                 >
@@ -158,6 +212,7 @@ function MemoryDetails({ memories }) {
 
                 <p
                     className="
+                        mt-1
                         text-zinc-400
                     "
                 >
@@ -169,16 +224,24 @@ function MemoryDetails({ memories }) {
             {/* Extra information */}
             <div
                 className="
-                    mt-6
+                    mt-8
                     flex
                     flex-wrap
-                    gap-4
-                    text-sm
-                    text-zinc-400
+                    gap-3
                 "
             >
 
-                <span>
+                <span
+                    className="
+                        rounded-full
+                        border
+                        border-white/10
+                        bg-white/5
+                        px-4
+                        py-2
+                        text-sm
+                    "
+                >
                     {memory.mood}
                 </span>
 
@@ -188,6 +251,13 @@ function MemoryDetails({ memories }) {
                         flex
                         items-center
                         gap-2
+                        rounded-full
+                        border
+                        border-white/10
+                        bg-white/5
+                        px-4
+                        py-2
+                        text-sm
                     "
                 >
                     <FiMapPin />
@@ -196,12 +266,21 @@ function MemoryDetails({ memories }) {
 
             </div>
 
+            <hr
+                className="
+                    mt-8
+                    border-white/10
+                "
+            />
+
             {/* Actions */}
             <div
                 className="
                     mt-8
                     flex
+                    items-center
                     gap-6
+                    text-sm
                     text-zinc-400
                 "
             >
@@ -218,12 +297,21 @@ function MemoryDetails({ memories }) {
                 >
                     <FiHeart 
                         className={`
+                            text-lg
                             transition
-                            duration-200  
-                            ${liked ? "scale-125 fill-pink-500 text-pink-500" : ""}
+                            duration-200
+                            ${liked ? "fill-pink-500 text-pink-500" : ""}
                         `}
                     />
-                    {memory.likes + (liked ? 1 : 0)}
+
+                    <span>
+                        {memory.likes + (liked ? 1 : 0)}
+                    </span>
+
+                    <span>
+                        Likes
+                    </span>
+
                 </button>
 
 
@@ -236,11 +324,26 @@ function MemoryDetails({ memories }) {
                         hover:text-white
                     "
                 >
-                    <FiMessageCircle />
-                    {memory.comments}
+                    <FiMessageCircle className="text-lg"/>
+
+                    <span>
+                        {memory.comments}
+                    </span>
+
+                    <span>
+                        Comments
+                    </span>
+
                 </button>
 
             </div>
+
+            <hr
+                className="
+                    my-8
+                    border-white/10
+                "
+            />
 
             <CommentsSection />
 
