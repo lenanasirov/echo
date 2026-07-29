@@ -83,32 +83,60 @@ function Feed({ memories }) {
                 </div>
 
                 {/* Memories */}
-                <div
-                    className="
-                        mt-12
-                        space-y-8
-                    "
-                >
-                    
-                    {memories.map((memory, index) => (
-                        <motion.div
-                            key={memory.id}
-                            initial={{
-                                opacity: 0,
-                                y: 30
-                            }}
-                            animate={{
-                                opacity: 1,
-                                y: 0
-                            }}
-                            transition={{
-                                delay: index * 0.15
-                            }}>
-                            <MemoryCard  memory={memory} />
-                        </motion.div>    
-                    ))}
+                {memories.length === 0 ? (
+                    <div
+                        className="
+                            mt-20
+                            text-center
+                            text-zinc-400
+                        "
+                    >
 
-                </div>
+                        <h2
+                            className="
+                                text-2xl
+                                font-semibold
+                                text-white
+                            "
+                        >
+                            No memories yet.
+                        </h2>
+
+                        <p className="mt-3">
+                            Create your first Echo 🎵
+                        </p>
+
+                    </div>
+
+                ) : (
+                    <div
+                        className="
+                            mt-12
+                            space-y-8
+                        "
+                    >
+                        
+                        {memories.map((memory, index) => (
+                            <motion.div
+                                key={memory.id}
+                                initial={{
+                                    opacity: 0,
+                                    y: 30
+                                }}
+                                animate={{
+                                    opacity: 1,
+                                    y: 0
+                                }}
+                                transition={{
+                                    delay: index * 0.15
+                                }}>
+                                <MemoryCard  memory={memory} />
+                            </motion.div>    
+                        ))}
+
+                    </div>
+                )}
+
 
 
             </div>

@@ -7,10 +7,12 @@ import SongSelector from "../components/memory/SongSelector";
 function CreateMemory({ memories, setMemories }) {
     const navigate= useNavigate();
 
-    const [selectedMood, setSelctedMood] = useState("");
+    const [selectedMood, setSelectedMood] = useState("");
     const [caption, setCaption] = useState("");
     const [image, setImage] = useState(null);
     const [selectedSong, setSelectedSong] = useState(null);
+
+    const canSave = image && selectedMood && selectedSong;
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -21,6 +23,10 @@ function CreateMemory({ memories, setMemories }) {
     };
 
     const handleSave = () => {
+        if(!image || !selectedMood || !selectedSong){
+            return;
+        }
+        
 
         const newMemory = {
             id: Date.now(),
@@ -41,6 +47,11 @@ function CreateMemory({ memories, setMemories }) {
             newMemory, 
             ...memories
         ]);;
+
+        setImage(null);
+        setSelectedSong(null);
+        setSelectedMood("");
+        setCaption("");
 
         navigate("/feed");
     };
@@ -193,7 +204,7 @@ function CreateMemory({ memories, setMemories }) {
                             {moods.map((mood) => (
 
                                 <button
-                                    onClick={() => setSelctedMood(mood)}
+                                    onClick={() => setSelectedMood(mood)}
                                     key={mood}
                                     className={`
                                         rounded-full
@@ -313,7 +324,7 @@ function CreateMemory({ memories, setMemories }) {
                         "
                     >
 
-                        <Button onClick={handleSave}>
+                        <Button onClick={handleSave} disabled={!canSave}>
                             Save Memory
                         </Button>
 
