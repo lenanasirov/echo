@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 
+import CommentsSection from "../components/memory/CommentsSection";
+
 import {
     FiHeart,
     FiMessageCircle,
@@ -239,6 +241,8 @@ function MemoryDetails({ memories }) {
                 </button>
 
             </div>
+
+            <CommentsSection />
 
         </div>
     );
