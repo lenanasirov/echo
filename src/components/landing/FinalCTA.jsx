@@ -109,7 +109,7 @@ function FinalCTA() {
                             scale: 1.05
                         }}
                     >
-                        <Link to="/feed">
+                        <Link to="/register">
                             <Button>
                                 Join Echo
                             </Button>

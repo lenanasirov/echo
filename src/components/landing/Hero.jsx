@@ -102,7 +102,7 @@ function Hero() {
               sm:gap-6
             "
           >
-            <Link to="/feed">
+            <Link to="/register">
               <Button>
                 Start Echoing
               </Button>
