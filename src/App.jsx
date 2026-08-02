@@ -11,6 +11,7 @@ import Feed from "./pages/Feed";
 import CreateMemory from "./pages/CreateMemory";
 import mockMemories from "./data/mockMemories";
 import MemoryDetails from "./pages/MemoryDetails";
+import AuthLayout from "./layouts/AuthLayout";
 
 
 function App() {
@@ -33,8 +34,10 @@ function App() {
         </Route>
 
         {/* Authentication */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
 
       </Routes>
     </BrowserRouter>
