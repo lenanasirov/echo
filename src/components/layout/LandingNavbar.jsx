@@ -41,7 +41,7 @@ function LandingNavbar() {
             How It Works
         </a>
 
-        <Link to="/feed">
+        <Link to="/register">
           <Button>
             Join Echo
           </Button>

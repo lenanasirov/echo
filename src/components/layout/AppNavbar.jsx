@@ -1,8 +1,9 @@
 import Logo from "../common/Logo";
-import { NavLink } from "react-router-dom";
-
+import { useAuth } from "../../hooks/useAuth";
+import NavItem from "../common/NavItem";
 
 function AppNavbar() {
+    const { logout } = useAuth();
     return (
         <nav
             className="
@@ -27,53 +28,29 @@ function AppNavbar() {
                 "
             >
 
-                <NavLink 
-                    to="/feed"
-                    className={({ isActive }) =>
-                        `
-                        transition
-                        ${
-                            isActive
-                            ? "text-white"
-                            : "text-zinc-400 hover:text-white"
-                        }
-                        `
-                    }
-                >
-                    Feed
-                </NavLink>
 
-                <NavLink 
-                    to="/create"
-                    className={({ isActive }) =>
-                        `
-                        transition
-                        ${
-                            isActive
-                            ? "text-white"
-                            : "text-zinc-400 hover:text-white"
-                        }
-                        `
-                    }
-                >
+                <NavItem to="/feed">
+                Feed
+                </NavItem>
+
+                <NavItem to="/create">
                     Create Memory
-                </NavLink>
+                </NavItem>
 
-                <NavLink 
-                    to="/profile"
-                    className={({ isActive }) =>
-                        `
-                        transition
-                        ${
-                            isActive
-                            ? "text-white"
-                            : "text-zinc-400 hover:text-white"
-                        }
-                        `
-                    }
-                >
+                <NavItem to="/profile">
                     Profile
-                </NavLink>
+                </NavItem>
+                        
+                <button
+                    onClick={logout}
+                    className="
+                        text-zinc-400
+                        hover:text-white
+                        transition
+                    "
+                >
+                    Logout
+                </button>
 
             </div>
 

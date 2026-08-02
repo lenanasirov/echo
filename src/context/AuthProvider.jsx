@@ -3,18 +3,31 @@ import { AuthContext } from "./AuthContext";
 
 export function AuthProvider({ children }) {
 
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem("echo-user");
 
-    const login = (credentials) => {
+        return savedUser
+            ? JSON.parse(savedUser)
+            : null;
+    });
+
+    console.log("Auth user:", user);
+
+    const login = (userData) => {
 
         const loggedUser = {
             id: 1,
             name: "Lena",
             avatar: "🌸",
-            email: credentials.email
+            email: userData.email
         };
 
         setUser(loggedUser);
+
+            localStorage.setItem(
+            "echo-user",
+            JSON.stringify(loggedUser)
+        );
     };
 
     const register = (userData) => {
@@ -27,10 +40,19 @@ export function AuthProvider({ children }) {
         };
 
         setUser(newUser);
+
+        localStorage.setItem(
+            "echo-user",
+            JSON.stringify(newUser)
+        );
     };
 
     const logout = () => {
+
         setUser(null);
+
+        localStorage.removeItem("echo-user");
+        
     };
 
     return (

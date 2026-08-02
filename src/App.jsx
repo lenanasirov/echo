@@ -12,6 +12,7 @@ import CreateMemory from "./pages/CreateMemory";
 import mockMemories from "./data/mockMemories";
 import MemoryDetails from "./pages/MemoryDetails";
 import AuthLayout from "./layouts/AuthLayout";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 
 function App() {
@@ -26,12 +27,15 @@ function App() {
         </Route>
 
         {/* Application */}
-        <Route element={<AppLayout />}>
-          <Route path="/feed" element={<Feed memories={memories}/>} />
-          <Route path="/create" element={<CreateMemory memories={memories} setMemories={setMemories} />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/memory/:id" element={<MemoryDetails memories={memories} />} />``
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/feed" element={<Feed memories={memories}/>} />
+            <Route path="/create" element={<CreateMemory memories={memories} setMemories={setMemories} />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/memory/:id" element={<MemoryDetails memories={memories} />} />``
+          </Route>
         </Route>
+
 
         {/* Authentication */}
         <Route element={<AuthLayout />}>
