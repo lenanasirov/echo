@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 
 import MemoryCard from "../components/memory/MemoryCard";
+import EmptyState from "../components/common/EmptyState";
 
 function Feed() {
     const { data } = useSelector((state) => state.memories);
@@ -87,29 +88,10 @@ function Feed() {
 
                 {/* Memories */}
                 {data.length === 0 ? (
-                    <div
-                        className="
-                            mt-20
-                            text-center
-                            text-zinc-400
-                        "
-                    >
-
-                        <h2
-                            className="
-                                text-2xl
-                                font-semibold
-                                text-white
-                            "
-                        >
-                            No memories yet.
-                        </h2>
-
-                        <p className="mt-3">
-                            Create your first Echo 🎵
-                        </p>
-
-                    </div>
+                    <EmptyState
+                        title="No memories yet."
+                        description="Create your first Echo 🎵"
+                    />
 
                 ) : (
                     <div

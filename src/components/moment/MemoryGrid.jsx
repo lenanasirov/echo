@@ -1,28 +1,15 @@
 import { FiMusic } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import EmptyState from "../common/EmptyState";
 
 function MemoryGrid({ memories }) {
     if (memories.length === 0) {
         return (
-            <div
-                className="
-                    flex
-                    flex-col
-                    items-center
-                    justify-center
-                    py-16
-                    text-center
-                "
-            >
-                <p className="text-xl text-white">
-                    No memories yet.
-                </p>
-
-                <p className="mt-2 text-zinc-400">
-                    Create your first Echo 🎵
-                </p>
-            </div>
+            <EmptyState
+                title="No memories yet."
+                description="Create your first Echo 🎵"
+            />
         );
     }
     return (

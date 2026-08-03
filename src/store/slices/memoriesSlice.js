@@ -10,7 +10,7 @@ const initialState = {
             id: 1,
 
             user: {
-                name: "Lena",
+                name: "Len",
                 avatar: "🌸"
             },
 
