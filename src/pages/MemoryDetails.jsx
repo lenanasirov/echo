@@ -1,7 +1,10 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 
+import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
 
 import {
@@ -12,7 +15,8 @@ import {
 } from "react-icons/fi";
 
 
-function MemoryDetails({ memories }) {
+function MemoryDetails() {
+    const { data } = useSelector((state) => state.memories);
     const navigate = useNavigate();
     const { id } = useParams();
     const [liked, setLiked] = useState(false);
@@ -21,7 +25,7 @@ function MemoryDetails({ memories }) {
         setLiked(!liked)
     };
 
-    const memory = memories.find(
+    const memory = data.find(
         (memory) => memory.id === Number(id)
     );
 
@@ -29,13 +33,26 @@ function MemoryDetails({ memories }) {
         return(
             <div
                 className="
-                    px-8
-                    py-12
+                    mx-auto
+                    max-w-3xl
+                    px-6
+                    py-16
                     text-center
-                    text-zinc-400
                 "
             >
-                Memory not found.
+                <h1 className="text-3xl font-bold text-white">
+                    Memory not found
+                </h1>
+
+                <p className="mt-4 text-zinc-400">
+                    The memory you're looking for doesn't exist or may have been removed.
+                </p>
+
+                <Link to="/feed">
+                    <Button className="mt-8">
+                        Back to Feed
+                    </Button>
+                </Link>
             </div>
         )
     }

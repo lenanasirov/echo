@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
 
 import MemoryCard from "../components/memory/MemoryCard";
 
-function Feed({ memories }) {
+function Feed() {
+    const { data } = useSelector((state) => state.memories);
+
     return (
         <section
             className="
@@ -83,7 +86,7 @@ function Feed({ memories }) {
                 </div>
 
                 {/* Memories */}
-                {memories.length === 0 ? (
+                {data.length === 0 ? (
                     <div
                         className="
                             mt-20
@@ -116,7 +119,7 @@ function Feed({ memories }) {
                         "
                     >
                         
-                        {memories.map((memory, index) => (
+                        {data.map((memory, index) => (
                             <motion.div
                                 key={memory.id}
                                 initial={{

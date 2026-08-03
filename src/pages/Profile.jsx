@@ -1,8 +1,12 @@
-import user from "../data/mockUser";
-import memories from "../data/mockMemories";
 import MemoryGrid from "../components/moment/MemoryGrid";
+import { useSelector } from "react-redux";
+import { useAuth } from "../hooks/useAuth";
 
 function Profile() {
+  const { data } = useSelector((state) => state.memories);
+  const { user } = useAuth();
+  const userMemories = data.filter((memory) => memory.user.name === user.name);
+
   return (
             <section
             className="
@@ -105,7 +109,7 @@ function Profile() {
 
                       <div>
                           <p className="font-bold text-xl">
-                              {user.stats.memories}
+                              {userMemories.length}
                           </p>
 
                           <span className="text-zinc-400 text-sm">
@@ -115,7 +119,8 @@ function Profile() {
                       
                       <div>
                           <p className="font-bold text-xl">
-                              {user.stats.likes}
+                            {/* TODO: REPLACE WITH REAL DATA */}
+                              0
                           </p>
 
                           <span className="text-zinc-400 text-sm">
@@ -125,7 +130,8 @@ function Profile() {
 
                       <div>
                           <p className="font-bold text-xl">
-                              {user.stats.friends}
+                              {/* TODO: REPLACE WITH REAL DATA */}
+                              0
                           </p>
 
                           <span className="text-zinc-400 text-sm">
@@ -156,7 +162,7 @@ function Profile() {
 
 
                 <MemoryGrid
-                    memories={memories}
+                    memories={userMemories}
                 />
 
               </div>

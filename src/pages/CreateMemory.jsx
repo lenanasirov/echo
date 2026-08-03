@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 
+import { addMemory } from "../store/slices/memoriesSlice";
+import { useAuth } from "../hooks/useAuth";
 import Button from "../components/common/Button";
 import SongSelector from "../components/memory/SongSelector";
 
-function CreateMemory({ memories, setMemories }) {
+function CreateMemory() {
+    const dispatch = useDispatch();
+
+    const { user } = useAuth();
+
     const navigate= useNavigate();
 
     const [selectedMood, setSelectedMood] = useState("");
@@ -31,23 +38,30 @@ function CreateMemory({ memories, setMemories }) {
         const newMemory = {
             id: Date.now(),
             user: {
-                name: "Lena",
-                avatar: "🌸"
+                name: user.name,
+                avatar: user.avatar
             },
             image,
             song: selectedSong,
             mood: selectedMood,
             caption,
             location: "Ashdod, Israel",
+            date: new Date().toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric"
+            }),
             likes: 0,
             comments: 0
         };
 
-        setMemories([
-            newMemory, 
-            ...memories
-        ]);;
+        // setMemories([
+        //     newMemory, 
+        //     ...memories
+        // ]);;
 
+        dispatch(addMemory(newMemory));
+        
         setImage(null);
         setSelectedSong(null);
         setSelectedMood("");

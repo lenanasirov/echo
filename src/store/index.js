@@ -1,19 +1,10 @@
-// import { configureStore } from "@reduxjs/toolkit";
-
-// export const store = configureStore({
-//   reducer: {},
-// });
-
 import { configureStore } from "@reduxjs/toolkit";
 
-
-function testReducer(state = {}, action) {
-  return state;
-}
+import  { memoriesReducer }  from "./slices/memoriesSlice";
 
 
 export const store = configureStore({
   reducer: {
-    test: testReducer,
+    memories: memoriesReducer,
   },
 });
