@@ -55,13 +55,8 @@ function CreateMemory() {
             comments: 0
         };
 
-        // setMemories([
-        //     newMemory, 
-        //     ...memories
-        // ]);;
-
         dispatch(addMemory(newMemory));
-        
+
         setImage(null);
         setSelectedSong(null);
         setSelectedMood("");

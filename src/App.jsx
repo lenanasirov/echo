@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
 
 import LandingLayout from "./layouts/LandingLayout";
 import AppLayout from "./layouts/AppLayout";
@@ -9,14 +8,12 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
 import CreateMemory from "./pages/CreateMemory";
-import mockMemories from "./data/mockMemories";
 import MemoryDetails from "./pages/MemoryDetails";
 import AuthLayout from "./layouts/AuthLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 
 function App() {
-  const [memories, setMemories] = useState(mockMemories);
   
   return (
     <BrowserRouter>
@@ -26,13 +23,13 @@ function App() {
           <Route path="/" element={<Home />} />
         </Route>
 
-        {/* Application */}
+        {/* Protected App */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route path="/feed" element={<Feed memories={memories}/>} />
-            <Route path="/create" element={<CreateMemory memories={memories} setMemories={setMemories} />} />
+            <Route path="/feed" element={<Feed />} />
+            <Route path="/create" element={<CreateMemory />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/memory/:id" element={<MemoryDetails memories={memories} />} />``
+            <Route path="/memory/:id" element={<MemoryDetails />} />``
           </Route>
         </Route>
 
