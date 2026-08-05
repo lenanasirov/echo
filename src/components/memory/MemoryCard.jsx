@@ -12,6 +12,9 @@ function MemoryCard({ memory }) {
     return(
         <motion.article
             onClick={() => navigate(`/memory/${memory.id}`)}
+            whileHover={{
+                y: -5
+            }}
             initial={{
                 opacity: 0,
                 y: 30
@@ -32,8 +35,9 @@ function MemoryCard({ memory }) {
                 bg-[#15151D]
                 transition-all
                 duration-300
-                hover:-translate-y-1
                 hover:border-purple-500/30
+                hover:shadow-xl
+                hover:shadow-purple-500/10
             "
         >
 
@@ -85,7 +89,7 @@ function MemoryCard({ memory }) {
                                 items-center
                                 gap-1
                                 text-sm
-                                text-zinc-
+                                text-zinc-400
                             "
                         >
                             <FiMapPin size={14} />
@@ -137,7 +141,7 @@ function MemoryCard({ memory }) {
             {/* Content */}
             <div className="p-5">
 
-                <h2 className="text-2xl font-semibold">
+                <h2 className="text-xl font-semibold">
                     {memory.song.title}
                 </h2>
 
@@ -168,8 +172,8 @@ function MemoryCard({ memory }) {
                         }}
                         className="
                             rounded-full
-                            bg-purple-500/10
-                            px-3
+                            bg-purple-500/15
+                            px-2.5
                             py-1
                             text-sm
                             text-purple-300
@@ -203,12 +207,28 @@ function MemoryCard({ memory }) {
                         text-zinc-400                        
                     "
                 >
-                    <span className="flex items-center gap-2">
+                    <span 
+                        className="
+                            flex 
+                            items-center 
+                            gap-2 
+                            transition 
+                            hover:text-purple-300
+                        "
+                    >
                         <FiHeart /> 
                         {memory.likes}
                     </span>
 
-                    <span className="flex items-center gap-2">
+                    <span 
+                        className="
+                            flex 
+                            items-center 
+                            gap-2 
+                            transition 
+                            hover:text-purple-300
+                        "
+                    >
                         <FiMessageCircle /> 
                         {memory.comments}
                     </span>
