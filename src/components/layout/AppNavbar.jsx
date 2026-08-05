@@ -45,8 +45,10 @@ function AppNavbar() {
                     onClick={logout}
                     className="
                         text-zinc-400
-                        hover:text-white
                         transition
+                        duration-200
+                        hover:text-white
+                        hover:-translate-y-0.5
                     "
                 >
                     Logout

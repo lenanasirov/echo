@@ -11,8 +11,8 @@ function NavItem({ to, children }) {
                 transition
                 ${
                     isActive
-                        ? "text-white"
-                        : "text-zinc-400 hover:text-white"
+                        ? "text-white font-medium"
+                        : "text-zinc-400 hover:text-white hover:-translate-y-0.5"
                 }
                 `
             }
