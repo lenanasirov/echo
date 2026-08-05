@@ -3,9 +3,9 @@ import { useSelector } from "react-redux";
 import { useAuth } from "../hooks/useAuth";
 
 function Profile() {
-  const { data } = useSelector((state) => state.memories);
+  const { memories } = useSelector((state) => state.memories);
   const { user } = useAuth();
-  const userMemories = data.filter((memory) => memory.user.name === user.name);
+  const userMemories = memories.filter((memory) => memory.user.name === user.name);
 
   return (
             <section

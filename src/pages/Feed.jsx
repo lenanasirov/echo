@@ -7,7 +7,7 @@ import MemoryCard from "../components/memory/MemoryCard";
 import EmptyState from "../components/common/EmptyState";
 
 function Feed() {
-    const { data } = useSelector((state) => state.memories);
+    const { memories } = useSelector((state) => state.memories);
 
     return (
         <section
@@ -87,7 +87,7 @@ function Feed() {
                 </div>
 
                 {/* Memories */}
-                {data.length === 0 ? (
+                {memories.length === 0 ? (
                     <EmptyState
                         title="No memories yet."
                         description="Create your first Echo 🎵"
@@ -101,7 +101,7 @@ function Feed() {
                         "
                     >
                         
-                        {data.map((memory, index) => (
+                        {memories.map((memory, index) => (
                             <motion.div
                                 key={memory.id}
                                 initial={{

@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { AuthContext } from "./AuthContext";
+import { 
+    saveToStorage,
+    getFromStorage,
+    removeFromStorage
+} from "../utils/storage";
 
 export function AuthProvider({ children }) {
 
     const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem("echo-user");
-
-        return savedUser
-            ? JSON.parse(savedUser)
-            : null;
+        return getFromStorage("echo-user");
     });
-
-    console.log("Auth user:", user);
 
     const login = (userData) => {
 
@@ -24,10 +23,7 @@ export function AuthProvider({ children }) {
 
         setUser(loggedUser);
 
-            localStorage.setItem(
-            "echo-user",
-            JSON.stringify(loggedUser)
-        );
+        saveToStorage("echo-user", loggedUser);
     };
 
     const register = (userData) => {
@@ -41,18 +37,14 @@ export function AuthProvider({ children }) {
 
         setUser(newUser);
 
-        localStorage.setItem(
-            "echo-user",
-            JSON.stringify(newUser)
-        );
+        saveToStorage("echo-user", newUser);
     };
 
     const logout = () => {
 
         setUser(null);
 
-        localStorage.removeItem("echo-user");
-        
+        removeFromStorage("echo-user");
     };
 
     return (
@@ -60,7 +52,7 @@ export function AuthProvider({ children }) {
             value={{
                 user, 
                 login,
-                register,
+                register, 
                 logout
             }}
         >

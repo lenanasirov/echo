@@ -16,7 +16,7 @@ import {
 
 
 function MemoryDetails() {
-    const { data } = useSelector((state) => state.memories);
+    const { memories } = useSelector((state) => state.memories);
     const navigate = useNavigate();
     const { id } = useParams();
     const [liked, setLiked] = useState(false);
@@ -25,7 +25,7 @@ function MemoryDetails() {
         setLiked(!liked)
     };
 
-    const memory = data.find(
+    const memory = memories.find(
         (memory) => memory.id === Number(id)
     );
 
