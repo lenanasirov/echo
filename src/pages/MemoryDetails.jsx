@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
@@ -58,7 +59,15 @@ function MemoryDetails() {
     }
 
     return(
-        <div
+        <motion.div
+            initial={{
+                opacity:0,
+                y:20
+            }}
+            animate={{
+                opacity:1,
+                y:0
+            }}
             className="
                 mx-auto
                 max-w-4xl
@@ -105,7 +114,7 @@ function MemoryDetails() {
                     src={memory.image}
                     alt={memory.caption}
                     className="
-                        h-115
+                        aspect-video
                         w-full
                         object-cover
                         transition
@@ -181,7 +190,7 @@ function MemoryDetails() {
             <p
                 className="
                     mt-10
-                    text-2xl
+                    text-xl
                     font-medium
                     leading-relaxed
                     tracking-tight
@@ -194,7 +203,7 @@ function MemoryDetails() {
             <div
                 className="
                     mt-10
-                    rounded-3xl
+                    rounded-2xl
                     border
                     border-white/10
                     bg-linear-to-br
@@ -243,6 +252,25 @@ function MemoryDetails() {
                 className="
                     mt-8
                     flex
+                    flex-col
+                    gap-3
+                    text-sm
+                    text-zinc-400
+                "
+            >
+                <span>
+                    {memory.mood}
+                </span>
+
+                <span className="flex items-center gap-2">
+                    <FiMapPin />
+                    {memory.location}
+                </span>
+            </div>           
+            {/* <div
+                className="
+                    mt-8
+                    flex
                     flex-wrap
                     gap-3
                 "
@@ -281,7 +309,7 @@ function MemoryDetails() {
                     {memory.location}
                 </span>
 
-            </div>
+            </div> */}
 
             <hr
                 className="
@@ -324,11 +352,6 @@ function MemoryDetails() {
                     <span>
                         {memory.likes + (liked ? 1 : 0)}
                     </span>
-
-                    <span>
-                        Likes
-                    </span>
-
                 </button>
 
 
@@ -346,11 +369,6 @@ function MemoryDetails() {
                     <span>
                         {memory.comments}
                     </span>
-
-                    <span>
-                        Comments
-                    </span>
-
                 </button>
 
             </div>
@@ -364,7 +382,7 @@ function MemoryDetails() {
 
             <CommentsSection />
 
-        </div>
+        </motion.div>
     );
 }
 

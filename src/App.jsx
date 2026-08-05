@@ -11,12 +11,15 @@ import CreateMemory from "./pages/CreateMemory";
 import MemoryDetails from "./pages/MemoryDetails";
 import AuthLayout from "./layouts/AuthLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 
 function App() {
   
   return (
     <BrowserRouter>
+      <ScrollToTop />
+
       <Routes>
         {/* Landing */}
         <Route element={<LandingLayout />}>
