@@ -119,7 +119,7 @@ function CreateMemory() {
                 <label
                     className="
                         flex
-                        h-72
+                        h-64
                         cursor-pointer
                         items-center
                         justify-center
@@ -133,9 +133,9 @@ function CreateMemory() {
                         hover:border-purple-500
                     "
                 >
-                    {
-                        image ? (
-                            <img 
+                    {image ? (
+                        <div className="relative h-full w-full">
+                            <img
                                 src={image}
                                 alt="Preview"
                                 className="
@@ -143,31 +143,42 @@ function CreateMemory() {
                                     w-full
                                     object-cover
                                 "
-
                             />
-                        ) : (
+
                             <div
                                 className="
-                                    flex
-                                    flex-col
-                                    items-center
-                                    text-zinc-400
+                                    pointer-events-none
+                                    absolute
+                                    inset-0
+                                    bg-gradient-to-t
+                                    from-black/30
+                                    via-transparent
+                                    to-transparent
                                 "
-                            >
-                                <span className="text-5xl">
-                                    📸
-                                </span>
+                            />
+                        </div>
+                    ) : (
+                        <div
+                            className="
+                                flex
+                                flex-col
+                                items-center
+                                text-zinc-400
+                            "
+                        >
+                            <span className="text-5xl">
+                                📸
+                            </span>
 
-                                <span className="mt-3">
-                                    Add a photo
-                                </span>
-                            </div>
-                        )
-                    }
+                            <span className="mt-3">
+                                Add a photo
+                            </span>
+                        </div>
+                    )}
 
                     <input 
                         type="file"
-                        accept="image/"
+                        accept="image/*"
                         onChange={handleImageChange}
                         className="hidden"
                     />
@@ -213,8 +224,9 @@ function CreateMemory() {
                             {moods.map((mood) => (
 
                                 <button
-                                    onClick={() => setSelectedMood(mood)}
                                     key={mood}
+                                    type="button"
+                                    onClick={() => setSelectedMood(mood)}
                                     className={`
                                         rounded-full
                                         px-4
@@ -325,19 +337,19 @@ function CreateMemory() {
 
                     </div>
 
-                    <div
-                        className="
-                            mt-10
-                            flex
-                            justify-end
-                        "
-                    >
+                    <div className="mt-10">
+                        {!canSave && (
+                            <p className="mb-3 text-right text-sm text-zinc-500">
+                                Choose a photo, song, and mood to continue.
+                            </p>
+                        )}
 
-                        <Button onClick={handleSave} disabled={!canSave}>
-                            Save Memory
-                        </Button>
-
-                    </div>     
+                        <div className="flex justify-end">
+                            <Button onClick={handleSave} disabled={!canSave}>
+                                Save Memory
+                            </Button>
+                        </div>
+                    </div>   
 
                 </div>                      
                                 

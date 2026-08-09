@@ -1,6 +1,6 @@
 import nightDrive from "../assets/mock-images/night-drive.jpg";
 import nightRain from "../assets/mock-images/night-rain.jpg";
-import summerSunset from"../assets/mock-images/summer-sunset.jpg";;
+import summerSunset from"../assets/mock-images/summer-sunset.jpg";
 
 const mockMemories = [
     {
