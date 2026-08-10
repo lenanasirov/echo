@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
+import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
 
@@ -29,6 +30,8 @@ function MemoryDetails() {
     const memory = memories.find(
         (memory) => memory.id === Number(id)
     );
+
+    const imageUrl = useImage(memory?.image);
 
     if(!memory){
         return(
@@ -111,7 +114,7 @@ function MemoryDetails() {
             >
 
                 <img
-                    src={memory.image}
+                    src={imageUrl}
                     alt={memory.caption}
                     className="
                         aspect-video

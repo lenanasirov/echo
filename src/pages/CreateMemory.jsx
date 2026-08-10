@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 
+import { saveImage } from "../utils/imageStorage";
 import { addMemory } from "../store/slices/memoriesSlice";
 import { useAuth } from "../hooks/useAuth";
 import Button from "../components/common/Button";
 import SongSelector from "../components/memory/SongSelector";
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+const ALLOWED_IMAGE_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+];
+
 
 function CreateMemory() {
     const dispatch = useDispatch();
@@ -16,32 +26,66 @@ function CreateMemory() {
 
     const [selectedMood, setSelectedMood] = useState("");
     const [caption, setCaption] = useState("");
-    const [image, setImage] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [imageError, setImageError] = useState("");
     const [selectedSong, setSelectedSong] = useState(null);
 
-    const canSave = image && selectedMood && selectedSong;
+    const canSave = imageFile && selectedMood && selectedSong;
+
+    useEffect(() => {
+        return () => {
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
 
-        if (file) {
-            setImage(URL.createObjectURL(file));
+        if (!file) {
+            return;
         }
+
+        setImageError("");
+
+        if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+            setImageError("Please select a JPG, PNG, or WebP image.");
+            return;
+        }
+    
+        if (file.size > MAX_IMAGE_SIZE) {
+            setImageError("Image size must be less than 5MB.");
+            return;
+        }
+
+        setImageFile(file);
+
+        const previewUrl = URL.createObjectURL(file);
+
+        setImagePreview(previewUrl);
     };
 
-    const handleSave = () => {
-        if(!image || !selectedMood || !selectedSong){
+    const handleSave = async () => {
+        if(!imageFile || !selectedMood || !selectedSong){
             return;
         }
         
+        const memoryId = Date.now();
+
+        await saveImage(memoryId, imageFile);
 
         const newMemory = {
-            id: Date.now(),
+            id: memoryId,
             user: {
                 name: user.name,
                 avatar: user.avatar
             },
-            image,
+            image: {
+                type: "indexeddb",
+                id: memoryId
+            },
             song: selectedSong,
             mood: selectedMood,
             caption,
@@ -57,7 +101,8 @@ function CreateMemory() {
 
         dispatch(addMemory(newMemory));
 
-        setImage(null);
+        setImageFile(null);
+        setImagePreview(null);
         setSelectedSong(null);
         setSelectedMood("");
         setCaption("");
@@ -118,8 +163,10 @@ function CreateMemory() {
 
                 <label
                     className="
+                        group
+                        relative
                         flex
-                        h-64
+                        h-72
                         cursor-pointer
                         items-center
                         justify-center
@@ -133,15 +180,18 @@ function CreateMemory() {
                         hover:border-purple-500
                     "
                 >
-                    {image ? (
-                        <div className="relative h-full w-full">
+                    {imagePreview  ? (
+                        <>
                             <img
-                                src={image}
+                                src={imagePreview }
                                 alt="Preview"
                                 className="
                                     h-full
                                     w-full
                                     object-cover
+                                    transition
+                                    duration-300
+                                    group-hover:scale-105
                                 "
                             />
 
@@ -150,13 +200,21 @@ function CreateMemory() {
                                     pointer-events-none
                                     absolute
                                     inset-0
-                                    bg-gradient-to-t
-                                    from-black/30
-                                    via-transparent
-                                    to-transparent
+                                    flex
+                                    items-center
+                                    justify-center
+                                    bg-black/40
+                                    opacity-0
+                                    transition
+                                    duration-300
+                                    group-hover:opacity-100
                                 "
-                            />
-                        </div>
+                            >
+                                <span className="text-sm font-medium text-white">
+                                    Change photo
+                                </span>
+                            </div>
+                        </>
                     ) : (
                         <div
                             className="
@@ -173,17 +231,27 @@ function CreateMemory() {
                             <span className="mt-3">
                                 Add a photo
                             </span>
+
+                            <span className="mt-1 text-xs text-zinc-500">
+                                JPG, PNG or WebP · Max 5MB
+                            </span>
                         </div>
                     )}
 
                     <input 
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         onChange={handleImageChange}
                         className="hidden"
                     />
 
                 </label> 
+
+                {imageError && (
+                    <p className="mt-3 text-sm text-red-400">
+                        {imageError}
+                    </p>
+                )}
 
                     <div className="mt-8">
 
@@ -337,19 +405,24 @@ function CreateMemory() {
 
                     </div>
 
-                    <div className="mt-10">
-                        {!canSave && (
-                            <p className="mb-3 text-right text-sm text-zinc-500">
-                                Choose a photo, song, and mood to continue.
-                            </p>
-                        )}
+                    <div
+                        className="
+                            mt-10
+                            flex
+                            flex-col
+                            items-end
+                            gap-3
+                        "
+                    >
 
-                        <div className="flex justify-end">
-                            <Button onClick={handleSave} disabled={!canSave}>
-                                Save Memory
-                            </Button>
-                        </div>
-                    </div>   
+                        <Button
+                            onClick={handleSave}
+                            disabled={!canSave}
+                        >
+                            Save Memory
+                        </Button>
+                        
+                    </div>
 
                 </div>                      
                                 

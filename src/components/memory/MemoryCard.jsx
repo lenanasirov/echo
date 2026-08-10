@@ -6,9 +6,12 @@ import {
     FiMapPin,
     FiMusic
 } from "react-icons/fi";
+import useImage from "../../hooks/useImage";
 
 function MemoryCard({ memory }) {
     const navigate = useNavigate();
+    const imageUrl = useImage(memory.image);
+
     return(
         <motion.article
             onClick={() => navigate(`/memory/${memory.id}`)}
@@ -109,7 +112,7 @@ function MemoryCard({ memory }) {
             {/* Photo */}
             <div className="relative overflow-hidden">
                 <motion.img
-                    src={memory.image}
+                    src={imageUrl}
                     alt={memory.caption}
                     whileHover={{
                         scale: 1.03
