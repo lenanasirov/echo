@@ -10,6 +10,7 @@ const defaultMemories = [
         id: 1,
 
         user: {
+            id: 1,
             name: "Lena",
             avatar: "🌸"
         },
@@ -42,6 +43,7 @@ const defaultMemories = [
         id: 2,
 
         user: {
+            id: 2,
             name: "Maya",
             avatar: "🌻"
         },
@@ -74,6 +76,7 @@ const defaultMemories = [
         id: 3,
 
         user: {
+            id: 3,
             name: "Daniel",
             avatar: "🎧"
         },
@@ -118,10 +121,21 @@ const memoriesSlice = createSlice({
             ];
 
             saveToStorage("echo-memories", state.memories);
+        },
+
+        updateMemory: (state, action) => {
+            const index = state.memories.findIndex(
+                (memory) => memory.id === action.payload.id
+            );
+
+            if (index !== -1) {
+                state.memories[index] = action.payload;
+                saveToStorage("echo-memories", state.memories);
+            }
         }
     }
 });
 
-export const {addMemory} = memoriesSlice.actions;
+export const {addMemory, updateMemory} = memoriesSlice.actions;
 
 export const memoriesReducer = memoriesSlice.reducer;

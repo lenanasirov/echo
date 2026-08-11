@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
+import { isMemoryOwner } from "../utils/memoryUtils";
+import { useAuth } from "../hooks/useAuth";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
@@ -13,13 +15,17 @@ import {
     FiHeart,
     FiMessageCircle,
     FiMapPin,
-    FiArrowLeft
+    FiArrowLeft,
+    FiEdit2
 } from "react-icons/fi";
 
 
 function MemoryDetails() {
+    const { user } = useAuth();
     const { memories } = useSelector((state) => state.memories);
+    
     const navigate = useNavigate();
+
     const { id } = useParams();
     const [liked, setLiked] = useState(false);
 
@@ -27,9 +33,13 @@ function MemoryDetails() {
         setLiked(!liked)
     };
 
+    // find the memory with the given id
     const memory = memories.find(
         (memory) => memory.id === Number(id)
     );
+
+    // check if the memory is owned by the user
+    const isOwner = isMemoryOwner(memory, user);    // true or false
 
     const imageUrl = useImage(memory?.image);
 
@@ -186,6 +196,32 @@ function MemoryDetails() {
                     </div>
 
                 </div>
+
+                {/* Edit button */}
+                {isOwner && (
+                    <button
+                        onClick={() => navigate(`/memory/${memory.id}/edit`)}
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                            rounded-full
+                            border
+                            border-white/10
+                            bg-white/5
+                            px-4
+                            py-2
+                            text-sm
+                            text-zinc-400
+                            transition
+                            hover:border-purple-500
+                            hover:text-white
+                        "
+                    >
+                        <FiEdit2 />
+                        Edit
+                    </button>
+                )}
 
             </div>
 

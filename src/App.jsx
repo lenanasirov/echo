@@ -12,6 +12,7 @@ import MemoryDetails from "./pages/MemoryDetails";
 import AuthLayout from "./layouts/AuthLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ScrollToTop from "./components/common/ScrollToTop";
+import EditMemory from "./pages/EditMemory";
 
 
 function App() {
@@ -32,7 +33,8 @@ function App() {
             <Route path="/feed" element={<Feed />} />
             <Route path="/create" element={<CreateMemory />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/memory/:id" element={<MemoryDetails />} />``
+            <Route path="/memory/:id" element={<MemoryDetails />} />
+            <Route path="/memory/:id/edit" element={<EditMemory />} />
           </Route>
         </Route>
 
