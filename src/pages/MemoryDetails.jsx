@@ -1,12 +1,14 @@
 import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
+import { deleteMemory } from "../store/slices/memoriesSlice";
+import { deleteImage } from "../utils/imageStorage";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
@@ -16,7 +18,8 @@ import {
     FiMessageCircle,
     FiMapPin,
     FiArrowLeft,
-    FiEdit2
+    FiEdit2,
+    FiTrash2
 } from "react-icons/fi";
 
 
@@ -25,20 +28,51 @@ function MemoryDetails() {
     const { memories } = useSelector((state) => state.memories);
     
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const { id } = useParams();
+
     const [liked, setLiked] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleLike = () => {
         setLiked(!liked)
     };
+
 
     // find the memory with the given id
     const memory = memories.find(
         (memory) => memory.id === Number(id)
     );
 
+    // check if the memory is owned by the user
+    const isOwner = isMemoryOwner(memory, user);  
+
     const { imageUrl, isLoading } = useImage(memory?.image);
+
+    const handleDelete = async () => {
+        if (!isOwner || isDeleting) {
+            return;
+        }
+
+        setIsDeleting(true);
+
+        try {
+            if (memory.image && typeof memory.image === "object" && memory.image.type === "indexeddb") {
+                await deleteImage(memory.image.id);
+            } {
+                await deleteImage(memory.image.id);
+            }
+
+            dispatch(deleteMemory(memory));
+
+            navigate("/feed");
+        } catch (error) {
+            console.error("Failed to delete memory:", error);
+            setIsDeleting(false);
+        }
+    };
 
     if(!memory){
         return(
@@ -85,8 +119,7 @@ function MemoryDetails() {
         );
     }
 
-    // check if the memory is owned by the user
-    const isOwner = isMemoryOwner(memory, user);   
+ 
 
 
     return(
@@ -238,31 +271,130 @@ function MemoryDetails() {
 
                 {/* Edit button */}
                 {isOwner && (
-                    <button
-                        onClick={() => navigate(`/memory/${memory.id}/edit`)}
-                        className="
-                            flex
-                            items-center
-                            gap-2
-                            rounded-full
-                            border
-                            border-white/10
-                            bg-white/5
-                            px-4
-                            py-2
-                            text-sm
-                            text-zinc-400
-                            transition
-                            hover:border-purple-500
-                            hover:text-white
-                        "
-                    >
-                        <FiEdit2 />
-                        Edit
-                    </button>
+                    <div className="flex items-center gap-3">
+
+                        {/* Edit */}
+                        <button
+                            onClick={() => navigate(`/memory/${memory.id}/edit`)}
+                            className="
+                                flex
+                                items-center
+                                gap-2
+                                rounded-full
+                                border
+                                border-white/10
+                                bg-white/5
+                                px-4
+                                py-2
+                                text-sm
+                                text-zinc-400
+                                transition
+                                hover:border-purple-500
+                                hover:text-white
+                            "
+                        >
+                            <FiEdit2 />
+                            Edit
+                        </button>
+
+                        {/* Delete */ }
+                        <button
+                            onClick={() => setShowDeleteConfirmation(true)}
+                            disabled={isDeleting}
+                            className="
+                                flex
+                                items-center
+                                gap-2
+                                rounded-full
+                                border
+                                border-white/10
+                                bg-white/5
+                                px-4
+                                py-2
+                                text-sm
+                                text-zinc-400
+                                transition
+                                hover:border-red-500
+                                hover:text-red-400
+                            "
+                        >
+                            <FiTrash2 />
+                            Delete            
+                        </button>
+
+                    </div>
                 )}
 
             </div>
+
+            {/* Delete confirmation */}
+            {showDeleteConfirmation && (
+                <div
+                    className="
+                        mt-6
+                        rounded-2xl
+                        border
+                        border-red-500/20
+                        bg-red-500/5
+                        p-5
+                    "
+                >
+                    <h3 className="font-semibold text-white">
+                        Delete this memory?
+                    </h3>
+
+                    <p className="mt-2 text-sm text-zinc-400">
+                        This action cannot be undone. The memory and its photo
+                        will be permanently removed.
+                    </p>
+
+                    <div className="mt-5 flex gap-3">
+
+                        {/* Cancel */}
+                        <button
+                            onClick={() => setShowDeleteConfirmation(false)}
+                            disabled={isDeleting}
+                            className="
+                                rounded-full
+                                border
+                                border-white/10
+                                bg-white/5
+                                px-4
+                                py-2
+                                text-sm
+                                text-zinc-300
+                                transition
+                                hover:border-white/20
+                                hover:text-white
+                            "
+                        >
+                            Cancel
+                        </button>
+
+                        {/* Confirm delete */}
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="
+                                rounded-full
+                                bg-red-500
+                                px-4
+                                py-2
+                                text-sm
+                                font-medium
+                                text-white
+                                transition
+                                hover:bg-red-600
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
+                            "
+                        >
+                            {isDeleting ? "Deleting..." : "Delete Memory"}
+                        </button>
+
+                    </div>
+                </div>
+            )}
 
             {/* Caption */}
             <p

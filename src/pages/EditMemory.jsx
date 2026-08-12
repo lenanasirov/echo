@@ -3,11 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 
 import { updateMemory } from "../store/slices/memoriesSlice";
 import { saveImage } from "../utils/imageStorage";
+import { isMemoryOwner } from "../utils/memoryUtils";
+import { useAuth } from "../hooks/useAuth";
 import useImage from "../hooks/useImage";
 import MemoryForm from "../components/memory/MemoryForm";
 
 function EditMemory(){
     const { id } = useParams();
+    const { user } = useAuth();
 
     const dispatch = useDispatch();
     const navigate= useNavigate();
@@ -20,6 +23,8 @@ function EditMemory(){
         (memory) => memory.id === Number(id)
     );
 
+    const isOwner = isMemoryOwner(memory, user);
+
     const { imageUrl, isLoading} = useImage(memory?.image);
 
     if (!memory){
@@ -31,6 +36,20 @@ function EditMemory(){
 
                 <p className="mt-3 text-zinc-400">
                     The memory you're trying to edit doesn't exist.
+                </p>
+            </div>
+        );
+    }
+
+    if (!isOwner) {
+        return (
+            <div className="px-8 py-12 text-center">
+                <h1 className="text-3xl font-bold">
+                    Access denied
+                </h1>
+
+                <p className="mt-3 text-zinc-400">
+                    You can only edit your own memories.
                 </p>
             </div>
         );

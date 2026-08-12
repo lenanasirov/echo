@@ -132,10 +132,21 @@ const memoriesSlice = createSlice({
                 state.memories[index] = action.payload;
                 saveToStorage("echo-memories", state.memories);
             }
+        },
+
+        deleteMemory: (state, action) => {
+            const index = state.memories.findIndex(
+                (memory) => memory.id === action.payload.id
+            );
+
+            if (index !== -1) {
+                state.memories.splice(index, 1);
+                saveToStorage("echo-memories", state.memories);
+            }
         }
     }
 });
 
-export const {addMemory, updateMemory} = memoriesSlice.actions;
+export const {addMemory, updateMemory, deleteMemory} = memoriesSlice.actions;
 
 export const memoriesReducer = memoriesSlice.reducer;
