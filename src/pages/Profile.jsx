@@ -1,11 +1,12 @@
 import MemoryGrid from "../components/moment/MemoryGrid";
 import { useSelector } from "react-redux";
 import { useAuth } from "../hooks/useAuth";
+import { isMemoryOwner } from "../utils/memoryUtils";
 
 function Profile() {
   const { memories } = useSelector((state) => state.memories);
   const { user } = useAuth();
-  const userMemories = memories.filter((memory) => memory.user.name === user.name);
+  const userMemories = memories.filter((memory) => isMemoryOwner(memory, user));
 
   return (
             <section

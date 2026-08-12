@@ -26,7 +26,7 @@ function MemoryForm({initialMemory = null, initialImagePreview = null, submitLab
     const [imageError, setImageError] = useState("");
     const [selectedSong, setSelectedSong] = useState(initialMemory?.song || null);
 
-    const canSave = (imageFile || initialMemory?.image) && selectedMood && selectedSong;
+    const canSave = (imageFile || initialImagePreview) && selectedMood && selectedSong;
 
     useEffect(() => {
         return () => {

@@ -10,7 +10,9 @@ import useImage from "../../hooks/useImage";
 
 function MemoryCard({ memory }) {
     const navigate = useNavigate();
-    const imageUrl = useImage(memory.image);
+    const { imageUrl, isLoading } = useImage(memory?.image);
+
+
 
     return(
         <motion.article
@@ -111,41 +113,82 @@ function MemoryCard({ memory }) {
 
             {/* Photo */}
             <div className="relative overflow-hidden">
-                <motion.img
-                    src={imageUrl}
-                    alt={memory.caption}
-                    whileHover={{
-                        scale: 1.03
-                    }}
-                    transition={{
-                        duration: 0.25
-                    }}
-                    className="
-                        h-72
-                        w-full
-                        object-cover
-                    "
-                />
 
-                {/* Image overlay */}
-                <div
-                    className="
-                        pointer-events-none
-                        absolute
-                        inset-0
-                        bg-linear-to-t
-                        from-black/20
-                        to-transparent
-                    "
-                />
+                {isLoading ? (
+                    <div
+                        className="
+                            flex
+                            h-72
+                            items-center
+                            justify-center
+                            bg-black/20
+                        "
+                    >
+                        <div
+                            className="
+                                h-6
+                                w-6
+                                animate-spin
+                                rounded-full
+                                border-2
+                                border-white/20
+                                border-t-purple-500
+                            "
+                        />
+                    </div>
+                ) : imageUrl ? (
+                    <>
+                        <motion.img
+                            src={imageUrl}
+                            alt={memory.caption}
+                            whileHover={{
+                                scale: 1.03
+                            }}
+                            transition={{
+                                duration: 0.25
+                            }}
+                            className="
+                                h-72
+                                w-full
+                                object-cover
+                            "
+                        />
+
+                        {/* Image overlay */}
+                        <div
+                            className="
+                                pointer-events-none
+                                absolute
+                                inset-0
+                                bg-linear-to-t
+                                from-black/20
+                                to-transparent
+                            "
+                        />
+                    </>
+                ) : (
+                    <div
+                        className="
+                            flex
+                            h-72
+                            items-center
+                            justify-center
+                            bg-black/20
+                            text-sm
+                            text-zinc-500
+                        "
+                    >
+                        Image unavailable
+                    </div>
+                )}
+
             </div>
-
 
             {/* Content */}
             <div className="p-5">
 
                 <h2 className="text-xl font-semibold">
-                    {memory.song.title}
+                    {memory.song?.title}
                 </h2>
 
                 <p className="
@@ -157,7 +200,7 @@ function MemoryCard({ memory }) {
                     "
                 >
                     <FiMusic size={16} />
-                    {memory.song.artist}
+                    {memory.song?.artist}
                 </p>
 
                 <div

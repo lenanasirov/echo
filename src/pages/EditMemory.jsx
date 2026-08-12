@@ -20,7 +20,7 @@ function EditMemory(){
         (memory) => memory.id === Number(id)
     );
 
-    const imageUrl = useImage(memory?.image);
+    const { imageUrl, isLoading} = useImage(memory?.image);
 
     if (!memory){
         return(
@@ -36,13 +36,14 @@ function EditMemory(){
         );
     }
 
-    if (!imageUrl) {
+    if (isLoading) {
         return (
             <div className="px-8 py-12 text-center text-zinc-400">
                 Loading memory...
             </div>
         );
     }
+
 
     const handleEdit = async ({imageFile, selectedMood, caption, selectedSong, existingImage}) => {
         let image = existingImage;

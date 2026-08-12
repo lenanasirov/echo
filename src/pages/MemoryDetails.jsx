@@ -38,10 +38,7 @@ function MemoryDetails() {
         (memory) => memory.id === Number(id)
     );
 
-    // check if the memory is owned by the user
-    const isOwner = isMemoryOwner(memory, user);    // true or false
-
-    const imageUrl = useImage(memory?.image);
+    const { imageUrl, isLoading } = useImage(memory?.image);
 
     if(!memory){
         return(
@@ -71,6 +68,27 @@ function MemoryDetails() {
         )
     }
 
+    if (isLoading) {
+        return (
+            <div
+                className="
+                    mx-auto
+                    max-w-4xl
+                    px-6
+                    py-16
+                    text-center
+                    text-zinc-400
+                "
+            >
+                Loading memory...
+            </div>
+        );
+    }
+
+    // check if the memory is owned by the user
+    const isOwner = isMemoryOwner(memory, user);   
+
+
     return(
         <motion.div
             initial={{
@@ -89,6 +107,7 @@ function MemoryDetails() {
                 lg:px-8
             "
         >
+            {/* Back button */}
             <button
                 onClick={() => navigate(-1)}
                 className="
@@ -122,19 +141,39 @@ function MemoryDetails() {
                     border-white/10
                 "
             >
-
-                <img
-                    src={imageUrl}
-                    alt={memory.caption}
-                    className="
-                        aspect-video
-                        w-full
-                        object-cover
-                        transition
-                        duration-500
-                        hover:scale-[1.02]
-                    "
-                />
+                {imageUrl? (
+                    <img
+                        src={imageUrl}
+                        alt={memory.caption}
+                        className="
+                            aspect-video
+                            w-full
+                            object-cover
+                            transition
+                            duration-500
+                            hover:scale-[1.02]
+                        "
+                    />
+                ) : (
+                    <div
+                        className="
+                            flex
+                            aspect-video
+                            w-full
+                            items-center
+                            justify-center
+                            bg-white/5
+                            text-zinc-500
+                        "
+                    >
+                        <div className="text-center">
+                            <div className="text-4xl">📷</div>
+                            <p className="mt-3">
+                                Image unavailable
+                            </p>
+                        </div>
+                    </div>
+                )}
 
             </div>
 
@@ -271,7 +310,7 @@ function MemoryDetails() {
                         font-semibold
                     "
                 >
-                    🎵 {memory.song.title}
+                    🎵 {memory.song?.title}
                 </h3>
 
 
@@ -281,7 +320,7 @@ function MemoryDetails() {
                         text-zinc-400
                     "
                 >
-                    {memory.song.artist}
+                    {memory.song?.artist}
                 </p>
 
             </div>
