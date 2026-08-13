@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { updateMemory } from "../store/slices/memoriesSlice";
 import { saveImage } from "../utils/imageStorage";
@@ -7,6 +8,7 @@ import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
 import useImage from "../hooks/useImage";
 import MemoryForm from "../components/memory/MemoryForm";
+import Button from "../components/common/Button";
 
 function EditMemory(){
     const { id } = useParams();
@@ -29,28 +31,64 @@ function EditMemory(){
 
     if (!memory){
         return(
-            <div className="px-8 py-12 text-center">
-                <h1 className="text-3xl font-bold">
-                    Memory not found
-                </h1>
+            <div 
+                className="
+                flex
+                min-h-[70vh]
+                items-center
+                justify-center
+                px-6
+                text-center
+                "
+            >
+                <div>
+                    <h1 className="text-3xl font-bold">
+                        Memory not found
+                    </h1>
 
-                <p className="mt-3 text-zinc-400">
-                    The memory you're trying to edit doesn't exist.
-                </p>
+                    <p className="mt-3 text-zinc-400">
+                        The memory you're trying to edit doesn't exist.
+                    </p>
+
+                    <Link to="/feed">
+                        <Button className="mt-8">
+                            Back to Feed
+                        </Button>
+                    </Link>
+                </div>
+
             </div>
         );
     }
 
     if (!isOwner) {
         return (
-            <div className="px-8 py-12 text-center">
-                <h1 className="text-3xl font-bold">
-                    Access denied
-                </h1>
+            <div 
+                className="
+                flex
+                min-h-[70vh]
+                items-center
+                justify-center
+                px-6
+                text-center
+                "
+            >
+                <div>
+                    <h1 className="text-3xl font-bold">
+                        Access denied
+                    </h1>
 
-                <p className="mt-3 text-zinc-400">
-                    You can only edit your own memories.
-                </p>
+                    <p className="mt-3 text-zinc-400">
+                        You can only edit your own memories.
+                    </p>
+
+                    <Link to="/feed">
+                        <Button className="mt-8">
+                            Back to Feed
+                        </Button>
+                    </Link>
+                </div>
+
             </div>
         );
     }

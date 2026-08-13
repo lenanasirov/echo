@@ -59,15 +59,18 @@ function MemoryDetails() {
         setIsDeleting(true);
 
         try {
+            // Delete the image from IndexedDB
+            // only if this memory uses IndexedDB storage.
             if (memory.image && typeof memory.image === "object" && memory.image.type === "indexeddb") {
                 await deleteImage(memory.image.id);
-            } {
-                await deleteImage(memory.image.id);
-            }
+            } 
 
+            // Delete the memory from Redux.
+            // The reducer will also update localStorage.
             dispatch(deleteMemory(memory));
 
             navigate("/feed");
+
         } catch (error) {
             console.error("Failed to delete memory:", error);
             setIsDeleting(false);
@@ -78,26 +81,30 @@ function MemoryDetails() {
         return(
             <div
                 className="
-                    mx-auto
-                    max-w-3xl
+                    flex
+                    min-h-[70vh]
+                    items-center
+                    justify-center
                     px-6
-                    py-16
                     text-center
                 "
             >
-                <h1 className="text-3xl font-bold text-white">
-                    Memory not found
-                </h1>
+                <div>
+                    <h1 className="text-3xl font-bold text-white">
+                        Memory not found
+                    </h1>
 
-                <p className="mt-4 text-zinc-400">
-                    The memory you're looking for doesn't exist or may have been removed.
-                </p>
+                    <p className="mt-4 text-zinc-400">
+                        The memory you're looking for doesn't exist or may have been removed.
+                    </p>
 
-                <Link to="/feed">
-                    <Button className="mt-8">
-                        Back to Feed
-                    </Button>
-                </Link>
+                    <Link to="/feed">
+                        <Button className="mt-8">
+                            Back to Feed
+                        </Button>
+                    </Link>
+                </div>
+
             </div>
         )
     }
@@ -118,9 +125,6 @@ function MemoryDetails() {
             </div>
         );
     }
-
- 
-
 
     return(
         <motion.div
