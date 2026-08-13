@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import useImage from "../../hooks/useImage";
 import EmptyState from "../common/EmptyState";
+import Button from "../common/Button";
 
 function MemoryGridItem({ memory }) {
-    const imageUrl = useImage(memory.image);
+    const { imageUrl, isLoading } = useImage(memory.image);
 
     return (
         <Link
@@ -34,18 +35,58 @@ function MemoryGridItem({ memory }) {
                     border-white/10
                 "
             >
-                <img
-                    src={imageUrl}
-                    alt={memory.caption}
-                    className="
-                        h-full
-                        w-full
-                        object-cover
-                        transition
-                        duration-300
-                        group-hover:scale-105
-                    "
-                />
+
+                {isLoading ? (
+                    <div
+                        className="
+                            flex
+                            h-full
+                            w-full
+                            items-center
+                            justify-center
+                            bg-white/5
+                            text-zinc-500
+                        "
+                    >
+                         Loading...
+                    </div>
+                ) :imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt={memory.caption}
+                        className="
+                            h-full
+                            w-full
+                            object-cover
+                            transition
+                            duration-300
+                            group-hover:scale-105
+                        "
+                    />
+                ) : (
+                                        <div
+                        className="
+                            flex
+                            h-full
+                            w-full
+                            items-center
+                            justify-center
+                            bg-white/5
+                            text-zinc-500
+                        "
+                    >
+                        <div className="text-center">
+                                <div className="text-3xl">
+                                    📷
+                                </div>
+
+                                <p className="mt-2 text-sm">
+                                    Image unavailable
+                                </p>
+                            </div>
+                        </div>
+                )}
+
 
                 <div
                     className="
@@ -74,7 +115,7 @@ function MemoryGridItem({ memory }) {
                         <FiMusic />
 
                         <span>
-                            {memory.song.title}
+                            {memory.song?.title}
                         </span>
                     </div>
                 </div>
@@ -89,6 +130,13 @@ function MemoryGrid({ memories }) {
             <EmptyState
                 title="No memories yet."
                 description="Create your first Echo 🎵"
+                action={
+                    <Link to="/create">
+                        <Button className="mt-6">
+                            Create Memory
+                        </Button>
+                    </Link>
+                }
             />
         );
     }

@@ -69,7 +69,7 @@ function MemoryDetails() {
             // The reducer will also update localStorage.
             dispatch(deleteMemory(memory));
 
-            navigate("/feed");
+            navigate(-1);
 
         } catch (error) {
             console.error("Failed to delete memory:", error);

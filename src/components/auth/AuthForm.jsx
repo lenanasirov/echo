@@ -17,6 +17,7 @@ function AuthForm({
 }) {
 
     const [values, setValues] = useState({});
+    const [error, setError] = useState("");
 
     const navigate = useNavigate();
 
@@ -26,10 +27,20 @@ function AuthForm({
         e.preventDefault();
 
         if (mode === "login") {
-            login(values)
+            const success = login(values);
+
+            if (!success) {
+                setError("No account found with this email.");
+                return;
+            }
         }
         else {
-            register(values);
+            const success = register(values);
+
+            if (!success) {
+                setError("An account with this email already exists.");
+                return;
+            }
         }
 
         navigate("/feed");
@@ -67,6 +78,23 @@ function AuthForm({
                 {description}
             </p>
 
+            {error && (
+                <div
+                    className="
+                        mt-6
+                        rounded-xl
+                        border
+                        border-red-500/20
+                        bg-red-500/10
+                        px-4
+                        py-3
+                        text-sm
+                        text-red-400
+                    "
+                >
+                    {error}
+                </div>
+            )}
 
             <form
                 onSubmit={handleSubmit}

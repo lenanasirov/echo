@@ -6,6 +6,17 @@ import {
     removeFromStorage
 } from "../utils/storage";
 
+function createUser(userData) {
+    return {
+        id: Date.now(),
+        name: userData.username,
+        username: userData.username,
+        avatar: "🌸",
+        email: userData.email,
+        bio: ""
+    };
+}
+
 export function AuthProvider({ children }) {
 
     const [user, setUser] = useState(() => {
@@ -14,36 +25,81 @@ export function AuthProvider({ children }) {
 
     const login = (userData) => {
 
-        const loggedUser = {
-            id: 1,
-            name: "Lena",
-            avatar: "🌸",
-            email: userData.email
-        };
+        const users = getFromStorage("echo-users") || [];
 
-        setUser(loggedUser);
+        const existingUser = users.find(
+            (user) => user.email === userData.email
+        );
 
-        saveToStorage("echo-user", loggedUser);
+        if (!existingUser) {
+            return false;
+        }
+
+        setUser(existingUser);
+        saveToStorage("echo-user", existingUser);
+
+        return true;
     };
 
     const register = (userData) => {
 
-        const newUser = {
-            id: 1,
-            name: userData.username,
-            avatar: "🌸",
-            email: userData.email
-        };
+        const users = getFromStorage("echo-users") || [];
+
+        const existingUser = users.find(
+            (user) => user.email === userData.email
+        );
+
+        if (existingUser) {
+            return false;
+        }
+
+        const newUser = createUser(userData);
 
         setUser(newUser);
 
         saveToStorage("echo-user", newUser);
+
+        saveToStorage("echo-users", [
+            ...users,
+            newUser
+        ]);
+
+        return true;
+    };
+
+    const updateProfile = (profileData) => {
+
+        if (!user) {
+            return;
+        }
+
+        const updatedUser = {
+            ...user,
+            ...profileData
+        };
+
+        setUser(updatedUser);
+
+        // Update active session
+        saveToStorage("echo-user", updatedUser);
+
+        const users = getFromStorage("echo-users") || [];
+
+        const updatedUsers = users.map((storedUser) =>
+            storedUser.id === updatedUser.id
+                ? updatedUser
+                : storedUser
+        );
+
+        saveToStorage("echo-users", updatedUsers);
     };
 
     const logout = () => {
 
         setUser(null);
 
+        // Only remove the active session.
+        // The actual user account remains stored.
         removeFromStorage("echo-user");
     };
 
@@ -53,6 +109,7 @@ export function AuthProvider({ children }) {
                 user, 
                 login,
                 register, 
+                updateProfile,
                 logout
             }}
         >

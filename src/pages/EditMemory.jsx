@@ -124,7 +124,7 @@ function EditMemory(){
 
         dispatch(updateMemory(updatedMemory));
 
-        navigate("/feed");
+        navigate(-1);
     };
 
     return(
