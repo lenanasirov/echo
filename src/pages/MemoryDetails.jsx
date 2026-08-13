@@ -9,6 +9,7 @@ import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
 import { deleteMemory } from "../store/slices/memoriesSlice";
 import { deleteImage } from "../utils/imageStorage";
+import { toggleLike } from "../store/slices/memoriesSlice";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
@@ -32,14 +33,8 @@ function MemoryDetails() {
 
     const { id } = useParams();
 
-    const [liked, setLiked] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const handleLike = () => {
-        setLiked(!liked)
-    };
-
 
     // find the memory with the given id
     const memory = memories.find(
@@ -50,6 +45,21 @@ function MemoryDetails() {
     const isOwner = isMemoryOwner(memory, user);  
 
     const { imageUrl, isLoading } = useImage(memory?.image);
+
+    // check if the user has liked this memory  
+    const liked = memory?.likedBy?.includes(user.id);
+
+    const handleLike = () => {
+        if (!user || !memory) {
+            return;
+        }
+
+        dispatch(toggleLike({
+            memoryId: memory.id,
+            userId: user.id
+        }));
+    };
+
 
     const handleDelete = async () => {
         if (!isOwner || isDeleting) {
@@ -543,7 +553,8 @@ function MemoryDetails() {
                     text-zinc-400
                 "
             >
-
+                
+                {/* Like */}
                 <button
                     onClick={handleLike}
                     className="
@@ -564,11 +575,11 @@ function MemoryDetails() {
                     />
 
                     <span>
-                        {memory.likes + (liked ? 1 : 0)}
+                        {memory.likes}
                     </span>
                 </button>
 
-
+                {/* Comments */}
                 <button
                     className="
                         flex

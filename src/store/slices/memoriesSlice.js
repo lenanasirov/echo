@@ -34,6 +34,7 @@ const defaultMemories = [
             "July 23, 2026",
 
         likes: 12,
+        likedBy: [],
 
         comments: 3
     },
@@ -67,6 +68,7 @@ const defaultMemories = [
             "July 20, 2026",
 
         likes: 24,
+        likedBy: [],
 
         comments: 5
     },
@@ -101,6 +103,7 @@ const defaultMemories = [
             "July 18, 2026",
 
         likes: 18,
+        likedBy: [],
 
         comments: 4
     }
@@ -143,10 +146,38 @@ const memoriesSlice = createSlice({
                 state.memories.splice(index, 1);
                 saveToStorage("echo-memories", state.memories);
             }
-        }
+        },
+
+        toggleLike: (state, action) => {
+            const {memoryId, userId} = action.payload;
+
+            const memory = state.memories.find(
+                (memory) => memory.id === memoryId
+            );
+
+            if (!memory) {
+                return;
+            }
+
+            if (!memory.likedBy) {
+                memory.likedBy = [];
+            }
+
+            const userIndex = memory.likedBy.indexOf(userId);
+
+            if (userIndex === -1) {
+                memory.likedBy.push(userId);
+                memory.likes++;
+            } else {
+                memory.likedBy.splice(userIndex, 1);
+                memory.likes--;
+            }
+
+            saveToStorage("echo-memories", state.memories);
+        },
     }
 });
 
-export const {addMemory, updateMemory, deleteMemory} = memoriesSlice.actions;
+export const {addMemory, updateMemory, deleteMemory, toggleLike} = memoriesSlice.actions;
 
 export const memoriesReducer = memoriesSlice.reducer;
