@@ -36,7 +36,24 @@ const defaultMemories = [
         likes: 12,
         likedBy: [],
 
-        comments: 3
+        comments: [
+            {
+                id: 1,
+                userId: 2,
+                username: "maya",
+                avatar: "🌻",
+                text: "This song is perfect for a night drive!",
+                createdAt: "2026-07-23T21:30:00.000Z"
+            },
+            {
+                id: 2,
+                userId: 3,
+                username: "daniel",
+                avatar: "🎧",
+                text: "Love this one 🎵",
+                createdAt: "2026-07-23T22:15:00.000Z"
+            }
+        ]
     },
 
 
@@ -70,7 +87,7 @@ const defaultMemories = [
         likes: 24,
         likedBy: [],
 
-        comments: 5
+        comments: []
     },
 
 
@@ -105,7 +122,7 @@ const defaultMemories = [
         likes: 18,
         likedBy: [],
 
-        comments: 4
+        comments: []
     }
 ];
 
@@ -175,9 +192,77 @@ const memoriesSlice = createSlice({
 
             saveToStorage("echo-memories", state.memories);
         },
+        addComment: (state, action) => {
+            const {memoryId, comment} = action.payload;
+
+            const memory = state.memories.find(
+                (memory) => memory.id === memoryId
+            );
+
+            if (!memory) {
+                return;
+            }
+
+            if (!memory.comments) {
+                memory.comments = [];
+            }
+
+            memory.comments.push(comment);
+
+            saveToStorage("echo-memories", state.memories);
+        },
+        updateComment: (state, action) => {
+            const {memoryId, commentId, text} = action.payload;
+
+            const memory = state.memories.find(
+                (memory) => memory.id === memoryId
+            );
+
+            if (!memory) {
+                return;
+            }
+
+            const comment = memory.comments.find(
+                (comment) => comment.id === commentId
+            );
+
+            if (!comment) {
+                return;
+            }
+
+            comment.text = text;
+
+            saveToStorage("echo-memories", state.memories); 
+        },
+        deleteComment: (state, action) => {
+            const {memoryId, commentId} = action.payload;
+
+            const memory = state.memories.find(
+                (memory) => memory.id === memoryId
+            );
+
+            if (!memory) {
+                return;
+            }
+
+            memory.comments = memory.comments.filter(
+                (comment) => comment.id !== commentId
+            );
+
+            saveToStorage("echo-memories", state.memories);
+        },
+
     }
 });
 
-export const {addMemory, updateMemory, deleteMemory, toggleLike} = memoriesSlice.actions;
+export const {
+    addMemory, 
+    updateMemory, 
+    deleteMemory, 
+    toggleLike, 
+    addComment, 
+    updateComment, 
+    deleteComment
+} = memoriesSlice.actions;
 
 export const memoriesReducer = memoriesSlice.reducer;

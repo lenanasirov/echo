@@ -47,7 +47,7 @@ function MemoryDetails() {
     const { imageUrl, isLoading } = useImage(memory?.image);
 
     // check if the user has liked this memory  
-    const liked = memory?.likedBy?.includes(user.id);
+    const liked = memory?.likedBy?.includes(user?.id);
 
     const handleLike = () => {
         if (!user || !memory) {
@@ -592,7 +592,7 @@ function MemoryDetails() {
                     <FiMessageCircle className="text-lg"/>
 
                     <span>
-                        {memory.comments}
+                        {memory.comments?.length || 0}
                     </span>
                 </button>
 
@@ -605,7 +605,7 @@ function MemoryDetails() {
                 "
             />
 
-            <CommentsSection />
+            <CommentsSection memory={memory} />
 
         </motion.div>
     );

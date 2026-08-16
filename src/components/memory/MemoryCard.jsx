@@ -1,19 +1,36 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import {
     FiHeart,
     FiMessageCircle,
     FiMapPin,
     FiMusic
 } from "react-icons/fi";
+
+import { useAuth } from "../../hooks/useAuth";
+import { toggleLike } from "../../store/slices/memoriesSlice";
 import useImage from "../../hooks/useImage";
 
 function MemoryCard({ memory }) {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    const { user } = useAuth();
     const { imageUrl, isLoading } = useImage(memory?.image);
 
+    const handleLike = (event) => {
+        event.stopPropagation();
 
-
+        if (!user) {
+            return;
+        }
+        
+        dispatch(toggleLike({
+            memoryId: memory.id,
+            userId: user.id
+        }));
+    };
     return(
         <motion.article
             onClick={() => navigate(`/memory/${memory.id}`)}
@@ -253,18 +270,29 @@ function MemoryCard({ memory }) {
                         text-zinc-400                        
                     "
                 >
-                    <span 
+                    <button 
+                        onClick={handleLike}
                         className="
                             flex 
                             items-center 
                             gap-2 
                             transition 
-                            hover:text-purple-300
+                            hover:text-purple-400
                         "
                     >
-                        <FiHeart /> 
+                        <FiHeart 
+                            className={`
+                                transition
+                                duration-200
+                                ${
+                                    memory.likedBy?.includes(user?.id) 
+                                    ? "fill-pink-500 text-pink-500" 
+                                    : ""
+                                }
+                            `}
+                        /> 
                         {memory.likes}
-                    </span>
+                    </button>
 
                     <span 
                         className="
@@ -276,7 +304,7 @@ function MemoryCard({ memory }) {
                         "
                     >
                         <FiMessageCircle /> 
-                        {memory.comments}
+                        {memory.comments?.length || 0}
                     </span>
                 </div>
 
