@@ -9,6 +9,8 @@ import EmptyState from "../components/common/EmptyState";
 function Feed() {
     const { memories } = useSelector((state) => state.memories);
 
+    const showEmptyState = false;
+
     return (
         <section
             className="
@@ -29,17 +31,17 @@ function Feed() {
                 <div
                     className="
                         flex
-                        items-end
-                        justify-between
+                        flex-col
                         gap-6
                         border-b
                         border-white/10
                         pb-8
+                        md:flex-row
+                        md:items-end
+                        md:justify-between
                     "
                 >
-
                     <div>
-
                         <h1
                             className="
                                 text-4xl
@@ -58,13 +60,42 @@ function Feed() {
                             Discover memories shared through music, emotions, and moments.
                         </p>
 
+                        {/* Mobile New Memory button */}
+                        <Link
+                            to="/create"
+                            className="
+                                mt-5
+                                inline-flex
+                                items-center
+                                gap-2
+                                rounded-full
+                                bg-linear-to-r
+                                from-purple-500
+                                to-pink-500
+                                px-4
+                                py-2.5
+                                text-sm
+                                font-medium
+                                transition
+                                hover:scale-105
+                                focus:outline-none
+                                focus:ring-2
+                                focus:ring-purple-500
+                                focus:ring-offset-2
+                                focus:ring-offset-[#0F0F14]
+                                md:hidden
+                            "
+                        >
+                            <FiPlus />
+                            New Memory
+                        </Link>
                     </div>
 
+                    {/* Desktop New Memory button */}
                     <Link
                         to="/create"
                         className="
                             hidden
-                            md:flex
                             items-center
                             gap-2
                             rounded-full
@@ -77,20 +108,54 @@ function Feed() {
                             font-medium
                             transition
                             hover:scale-105
+                            focus:outline-none
+                            focus:ring-2
+                            focus:ring-purple-500
+                            focus:ring-offset-2
+                            focus:ring-offset-[#0F0F14]
+                            md:inline-flex
                         "
                     >
                         <FiPlus />
-
                         New Memory
                     </Link>
-
                 </div>
 
                 {/* Memories */}
-                {memories.length === 0 ? (
+                {showEmptyState || memories.length === 0 ? (
                     <EmptyState
                         title="No memories yet."
                         description="Create your first Echo 🎵"
+                        action={
+                            <Link
+                                to="/create"
+                                className="
+                                    mt-6
+                                    inline-flex
+                                    items-center
+                                    gap-2
+                                    rounded-full
+                                    bg-linear-to-r
+                                    from-purple-500
+                                    to-pink-500
+                                    px-5
+                                    py-3
+                                    text-sm
+                                    font-medium
+                                    text-white
+                                    transition
+                                    hover:scale-105
+                                    focus:outline-none
+                                    focus:ring-2
+                                    focus:ring-purple-500
+                                    focus:ring-offset-2
+                                    focus:ring-offset-[#0F0F14]
+                                "
+                            >
+                                <FiPlus />
+                                Create Memory
+                            </Link>
+                        }
                     />
 
                 ) : (

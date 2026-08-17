@@ -2,7 +2,7 @@ import { useSelector } from "react-redux";
 import { FiEdit2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
-import MemoryGrid from "../components/moment/MemoryGrid";
+import MemoryGrid from "../components/memory/MemoryGrid";
 import { useAuth } from "../hooks/useAuth";
 import { isMemoryOwner } from "../utils/memoryUtils";
 

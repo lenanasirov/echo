@@ -67,12 +67,16 @@ function MemoryCard({ memory }) {
             <div
                 className="
                     flex
-                    items-center
-                    justify-between
+                    flex-col
+                    gap-4
                     p-5
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
                 "
             >
-                <div className="flex items-center gap-3">
+                {/* Author */}
+                <div className="flex min-w-0 items-center gap-3">
 
                     <motion.div
                         whileHover={{
@@ -86,47 +90,68 @@ function MemoryCard({ memory }) {
                             flex
                             h-12
                             w-12
+                            shrink-0
                             items-center
                             justify-center
                             rounded-full
                             bg-linear-to-br
                             from-purple-500
                             to-pink-500
-                            text-white
                             text-xl
+                            text-white
+                            shadow-lg
+                            shadow-purple-500/10
                         "
                     >
                         {memory.user?.avatar}
                     </motion.div>
 
-                    <div>
+                    <div className="min-w-0">
 
-                        <h3 className="font-semibold">
+                        <h3
+                            className="
+                                truncate
+                                font-semibold
+                                text-white
+                            "
+                        >
                             {memory.user?.name}
                         </h3>
 
-                        <p className="
+                        <p
+                            className="
                                 mt-1
                                 flex
                                 items-center
                                 gap-1
+                                truncate
                                 text-sm
                                 text-zinc-400
                             "
                         >
-                            <FiMapPin size={14} />
+                            <FiMapPin
+                                size={14}
+                                className="shrink-0"
+                            />
+
                             {memory.location}
                         </p>
 
                     </div>
-
                 </div>
 
-                <span className="text-sm text-zinc-500">
+                {/* Date */}
+                <span
+                    className="
+                        text-sm
+                        text-zinc-500
+                        sm:shrink-0
+                    "
+                >
                     {memory.date}
                 </span>
 
-            </div>  
+            </div>
 
             {/* Photo */}
             <div className="relative overflow-hidden">
@@ -202,54 +227,72 @@ function MemoryCard({ memory }) {
             </div>
 
             {/* Content */}
-            <div className="p-5">
+            <div className="p-5 sm:p-6">
 
-                <h2 className="text-xl font-semibold">
-                    {memory.song?.title}
-                </h2>
-
-                <p className="
-                        mt-1
-                        flex
-                        items-center
-                        gap-2
-                        text-zinc-400
-                    "
-                >
-                    <FiMusic size={16} />
-                    {memory.song?.artist}
-                </p>
-
-                <div
-                    className="
-                        mt-4
-                        flex
-                        justify-between
-                        text-sm
-                        text-zinc-300
-                    "
-                >
-                    <motion.span
-                        whileHover={{
-                            scale: 1.05
-                        }}
+                {/* Song */}
+                <div>
+                    <p
                         className="
+                            text-xs
+                            font-medium
+                            uppercase
+                            tracking-[0.2em]
+                            text-zinc-600
+                        "
+                    >
+                        Soundtrack
+                    </p>
+
+                    <h2
+                        className="
+                            mt-2
+                            text-2xl
+                            font-semibold
+                            text-white
+                        "
+                    >
+                        {memory.song?.title}
+                    </h2>
+
+                    <p
+                        className="
+                            mt-1
+                            flex
+                            items-center
+                            gap-2
+                            text-sm
+                            text-zinc-400
+                        "
+                    >
+                        <FiMusic size={15} />
+                        {memory.song?.artist}
+                    </p>
+                </div>
+
+                {/* Mood */}
+                <div className="mt-5">
+                    <span
+                        className="
+                            inline-flex
                             rounded-full
-                            bg-purple-500/15
-                            px-2.5
-                            py-1
+                            border
+                            border-purple-500/20
+                            bg-purple-500/10
+                            px-3
+                            py-1.5
                             text-sm
                             text-purple-300
                         "
                     >
                         {memory.mood}
-                    </motion.span>
+                    </span>
                 </div>
 
+                {/* Caption */}
                 <p
                     className="
-                        mt-4
-                        italic
+                        mt-5
+                        text-sm
                         leading-relaxed
                         text-zinc-400
                     "
@@ -257,55 +300,103 @@ function MemoryCard({ memory }) {
                     "{memory.caption}"
                 </p>
 
+                {/* Actions */}
                 <div
                     className="
                         mt-6
                         flex
                         items-center
-                        justify-between
+                        gap-5
                         border-t
                         border-white/10
                         pt-5
-                        text-sm
-                        text-zinc-400                        
                     "
                 >
-                    <button 
+                    {/* Like */}
+                    <button
+                        type="button"
                         onClick={handleLike}
+                        aria-label={
+                            memory.likedBy?.includes(user?.id)
+                                ? "Unlike memory"
+                                : "Like memory"
+                        }
                         className="
-                            flex 
-                            items-center 
-                            gap-2 
-                            transition 
-                            hover:text-purple-400
+                            group
+                            flex
+                            items-center
+                            gap-2
+                            rounded-full
+                            px-2
+                            py-1.5
+                            text-sm
+                            text-zinc-400
+                            transition
+                            hover:bg-white/5
+                            hover:text-white
+                            focus:outline-none
+                            focus-visible:ring-2
+                            focus-visible:ring-purple-500/50
                         "
                     >
-                        <FiHeart 
+                        <FiHeart
                             className={`
+                                text-lg
                                 transition
                                 duration-200
+                                group-hover:scale-110
                                 ${
-                                    memory.likedBy?.includes(user?.id) 
-                                    ? "fill-pink-500 text-pink-500" 
-                                    : ""
+                                    memory.likedBy?.includes(user?.id)
+                                        ? "fill-pink-500 text-pink-500"
+                                        : ""
                                 }
                             `}
-                        /> 
-                        {memory.likes}
+                        />
+
+                        <span>
+                            {memory.likes}
+                        </span>
                     </button>
 
-                    <span 
+                    {/* Comments */}
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/memory/${memory.id}#comment-input`);
+                        }}
+                        aria-label={`View ${memory.comments?.length || 0} comments`}
                         className="
-                            flex 
-                            items-center 
-                            gap-2 
-                            transition 
-                            hover:text-purple-300
+                            group
+                            flex
+                            items-center
+                            gap-2
+                            rounded-full
+                            px-2
+                            py-1.5
+                            text-sm
+                            text-zinc-400
+                            transition
+                            hover:bg-white/5
+                            hover:text-white
+                            focus:outline-none
+                            focus-visible:ring-2
+                            focus-visible:ring-purple-500/50
                         "
                     >
-                        <FiMessageCircle /> 
-                        {memory.comments?.length || 0}
-                    </span>
+                        <FiMessageCircle
+                            className="
+                                text-lg
+                                transition
+                                duration-200
+                                group-hover:scale-110
+                            "
+                        />
+
+                        <span>
+                            {memory.comments?.length || 0}
+                        </span>
+                    </button>
                 </div>
 
             </div>

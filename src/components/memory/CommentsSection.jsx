@@ -464,6 +464,7 @@ function CommentsSection({ memory }) {
             >
 
                 <input
+                    id="comment-input"
                     value={newComment}
                     onChange={(event) =>
                         setNewComment(event.target.value)

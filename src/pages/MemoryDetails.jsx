@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
@@ -48,6 +48,34 @@ function MemoryDetails() {
 
     // check if the user has liked this memory  
     const liked = memory?.likedBy?.includes(user?.id);
+
+    const scrollToComments = () => {
+        const commentInput = document.getElementById("comment-input");
+    
+        if (!commentInput) {
+            return;
+        }
+    
+        commentInput.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    
+        commentInput.focus();
+    };
+
+    // Scroll to comments when arriving with #comment-input
+    useEffect(() => {
+        if (!memory || window.location.hash !== "#comment-input") {
+            return;
+        }
+    
+        const timeout = setTimeout(() => {
+            scrollToComments();
+        }, 200);
+    
+        return () => clearTimeout(timeout);
+    }, [memory]);
 
     const handleLike = () => {
         if (!user || !memory) {
@@ -411,28 +439,30 @@ function MemoryDetails() {
             )}
 
             {/* Caption */}
-            <p
-                className="
-                    mt-10
-                    text-xl
-                    font-medium
-                    leading-relaxed
-                    tracking-tight
-                "
-            >
-                {memory.caption}
-            </p>            
+            <div className="mt-10">
+                <p
+                    className="
+                        text-2xl
+                        font-medium
+                        leading-relaxed
+                        tracking-tight
+                        text-white
+                    "
+                >
+                    "{memory.caption}"
+                </p>
+            </div>          
 
             {/* Song */}
             <div
                 className="
-                    mt-10
+                    mt-8
                     rounded-2xl
                     border
                     border-white/10
                     bg-linear-to-br
-                    from-white/5
-                    to-white/2
+                    from-purple-500/10
+                    to-pink-500/5
                     p-6
                 "
             >
@@ -440,9 +470,10 @@ function MemoryDetails() {
                 <p
                     className="
                         text-xs
+                        font-medium
                         uppercase
                         tracking-[0.25em]
-                        text-zinc-500
+                        text-purple-300
                     "
                 >
                     Soundtrack
@@ -452,8 +483,9 @@ function MemoryDetails() {
                 <h3
                     className="
                         mt-3
-                        text-xl
+                        text-2xl
                         font-semibold
+                        text-white
                     "
                 >
                     🎵 {memory.song?.title}
@@ -476,44 +508,24 @@ function MemoryDetails() {
                 className="
                     mt-8
                     flex
-                    flex-col
-                    gap-3
-                    text-sm
-                    text-zinc-400
-                "
-            >
-                <span>
-                    {memory.mood}
-                </span>
-
-                <span className="flex items-center gap-2">
-                    <FiMapPin />
-                    {memory.location}
-                </span>
-            </div>           
-            {/* <div
-                className="
-                    mt-8
-                    flex
                     flex-wrap
                     gap-3
                 "
             >
-
                 <span
                     className="
                         rounded-full
                         border
-                        border-white/10
-                        bg-white/5
+                        border-purple-500/20
+                        bg-purple-500/10
                         px-4
                         py-2
                         text-sm
+                        text-purple-300
                     "
                 >
                     {memory.mood}
                 </span>
-
 
                 <span
                     className="
@@ -527,20 +539,14 @@ function MemoryDetails() {
                         px-4
                         py-2
                         text-sm
+                        text-zinc-400
                     "
                 >
                     <FiMapPin />
                     {memory.location}
                 </span>
+            </div>           
 
-            </div> */}
-
-            <hr
-                className="
-                    mt-8
-                    border-white/10
-                "
-            />
 
             {/* Actions */}
             <div
@@ -548,21 +554,34 @@ function MemoryDetails() {
                     mt-8
                     flex
                     items-center
-                    gap-6
-                    text-sm
-                    text-zinc-400
+                    gap-3
+                    border-t
+                    border-white/10
+                    pt-5
                 "
             >
                 
                 {/* Like */}
                 <button
+                    type="button"
                     onClick={handleLike}
+                    aria-label={liked ? "Unlike memory" : "Like memory"}
                     className="
+                        group
                         flex
                         items-center
                         gap-2
+                        rounded-full
+                        px-2
+                        py-1.5
+                        text-sm
+                        text-zinc-400
                         transition
+                        hover:bg-white/5
                         hover:text-white
+                        focus:outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-purple-500/50
                     "
                 >
                     <FiHeart 
@@ -570,6 +589,7 @@ function MemoryDetails() {
                             text-lg
                             transition
                             duration-200
+                            group-hover:scale-110
                             ${liked ? "fill-pink-500 text-pink-500" : ""}
                         `}
                     />
@@ -581,15 +601,35 @@ function MemoryDetails() {
 
                 {/* Comments */}
                 <button
+                    type="button"
+                    onClick={scrollToComments}
+                    aria-label={`View ${memory.comments?.length || 0} comments`}
                     className="
+                        group
                         flex
                         items-center
                         gap-2
+                        rounded-full
+                        px-2
+                        py-1.5
+                        text-sm
+                        text-zinc-400
                         transition
+                        hover:bg-white/5
                         hover:text-white
+                        focus:outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-purple-500/50
                     "
                 >
-                    <FiMessageCircle className="text-lg"/>
+                    <FiMessageCircle
+                        className="
+                            text-lg
+                            transition
+                            duration-200
+                            group-hover:scale-110
+                        "
+                    />
 
                     <span>
                         {memory.comments?.length || 0}

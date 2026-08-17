@@ -130,6 +130,7 @@ const initialState = {
     memories: getFromStorage("echo-memories") || defaultMemories
 };
 
+
 const memoriesSlice = createSlice({
     name: "memories",
     initialState,
