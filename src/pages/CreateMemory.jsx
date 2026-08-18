@@ -47,7 +47,7 @@ function CreateMemory() {
 
             likes: 0,
 
-            comments: 0
+            comments: []
         };
 
         dispatch(addMemory(newMemory));
