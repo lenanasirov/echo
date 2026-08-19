@@ -28,7 +28,7 @@ function getRandomNotificationTime(startDate = new Date()) {
 }
 
 
-function createEchoCycle(startDate = new Date()) {
+function createEchoCycle(startDate = new Date(), notificationPending = false) {
     const notificationDate =
         getRandomNotificationTime(startDate);
 
@@ -40,7 +40,9 @@ function createEchoCycle(startDate = new Date()) {
         nextNotificationAt:
             notificationDate.toISOString(),
 
-            notificationSent: false
+        notificationSent: false,
+        
+        notificationPending
     };
 }
 
@@ -53,7 +55,7 @@ function getCurrentEchoCycle(existingCycle, now = new Date()) {
         new Date(existingCycle.nextNotificationAt);
 
     if (now >= nextNotificationAt) {
-        return createEchoCycle(now);
+        return createEchoCycle(now, true);
     }
 
     return existingCycle;

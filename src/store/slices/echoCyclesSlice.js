@@ -22,7 +22,8 @@ const echoCyclesSlice = createSlice({
                 return;
             }
 
-            state.cycle.notificationSent = true;
+            state.cycle.notificationSent = true; // notification for this cycle is waiting to be shown
+            state.cycle.notificationPending = false; // notification for this cycle has not been shown yet
 
             saveToStorage("echo-cycle", state.cycle);
         }

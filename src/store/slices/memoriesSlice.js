@@ -9,6 +9,8 @@ const defaultMemories = [
     {
         id: 1,
 
+        cycleId: "cycle-2026-07-23",
+
         user: {
             id: 1,
             name: "Lena",
@@ -60,6 +62,8 @@ const defaultMemories = [
     {
         id: 2,
 
+        cycleId: "cycle-2026-07-20",
+
         user: {
             id: 2,
             name: "Maya",
@@ -93,6 +97,8 @@ const defaultMemories = [
 
     {
         id: 3,
+
+        cycleId: "cycle-2026-07-18",
 
         user: {
             id: 3,

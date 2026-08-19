@@ -3,13 +3,29 @@ import { FiPlus } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 
+import { useAuth } from "../hooks/useAuth";
 import MemoryCard from "../components/memory/MemoryCard";
 import EmptyState from "../components/common/EmptyState";
 
 function Feed() {
-    const { memories } = useSelector((state) => state.memories);
+    const { user } = useAuth();
 
-    const showEmptyState = false;
+    const { memories } = useSelector((state) => state.memories);
+    const { cycle } = useSelector((state) => state.echoCycle);
+
+    const currentCycleMemories = memories.filter(
+        (memory) => memory.cycleId === cycle?.id
+    );
+
+    const hasCurrentUserPosted = currentCycleMemories.some(
+        (memory) => memory.user.id === user?.id
+    );
+
+    const hasAnyCurrentCycleMemories = currentCycleMemories.length > 0;
+
+    const showWaitingState = hasAnyCurrentCycleMemories &&!hasCurrentUserPosted;
+
+    const showEmptyState = !hasAnyCurrentCycleMemories;
 
     return (
         <section
@@ -122,10 +138,10 @@ function Feed() {
                 </div>
 
                 {/* Memories */}
-                {showEmptyState || memories.length === 0 ? (
+                {showEmptyState ? (
                     <EmptyState
-                        title="No memories yet."
-                        description="Create your first Echo 🎵"
+                        title="No Echoes yet."
+                        description="Be the first to capture this moment 🎵"
                         action={
                             <Link
                                 to="/create"
@@ -157,7 +173,42 @@ function Feed() {
                             </Link>
                         }
                     />
-
+                ) : showWaitingState ? (
+                    <EmptyState
+                        title="Your Echo is waiting."
+                        description="Create your Echo to unlock today's memories."
+                        action={
+                            <Link
+                                to="/create"
+                                className="
+                                    mt-6
+                                    inline-flex
+                                    items-center
+                                    gap-2
+                                    rounded-full
+                                    bg-linear-to-r
+                                    from-purple-500
+                                    to-pink-500
+                                    px-5
+                                    py-3
+                                    text-sm
+                                    font-medium
+                                    text-white
+                                    transition
+                                    hover:scale-105
+                                    focus:outline-none
+                                    focus:ring-2
+                                    focus:ring-purple-500
+                                    focus:ring-offset-2
+                                    focus:ring-offset-[#0F0F14]
+                                "
+                            >
+                                <FiPlus />
+                                Create Memory
+                            </Link>
+                        }
+                    />
+                    
                 ) : (
                     <div
                         className="
@@ -166,7 +217,7 @@ function Feed() {
                         "
                     >
                         
-                        {memories.map((memory, index) => (
+                        {currentCycleMemories.map((memory, index) => (
                             <motion.div
                                 key={memory.id}
                                 initial={{

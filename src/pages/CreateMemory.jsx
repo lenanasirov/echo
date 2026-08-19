@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { saveImage } from "../utils/imageStorage";
 import { addMemory } from "../store/slices/memoriesSlice";
@@ -12,13 +12,23 @@ function CreateMemory() {
 
     const { user } = useAuth();
 
+    const { cycle } = useSelector(
+        (state) => state.echoCycle
+    );
+
     const handleCreate= async ({imageFile, selectedMood, caption, selectedSong}) => {
+        if (!cycle) {
+            return;
+        }
+
         const memoryId = Date.now();
 
         await saveImage(memoryId, imageFile);
 
         const newMemory = {
             id: memoryId,
+
+            cycleId: cycle.id,
 
             user: {
                 id: user.id,
@@ -46,6 +56,8 @@ function CreateMemory() {
             }),
 
             likes: 0,
+
+            likedBy: [],
 
             comments: []
         };
