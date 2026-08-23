@@ -49,11 +49,7 @@ function CreateMemory() {
 
             location: "Ashdod, Israel",
 
-            date: new Date().toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric"
-            }),
+            createdAt: new Date().toISOString(),
 
             likes: 0,
 

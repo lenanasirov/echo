@@ -14,6 +14,7 @@ import { canViewMemory, canEditMemory } from "../utils/memoryAccess";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
+import formatRelativeTime from "../utils/formatRelativeTime";   
 
 import {
     FiHeart,
@@ -363,7 +364,7 @@ function MemoryDetails() {
                                 text-zinc-500
                             "
                         >
-                            {memory.date}
+                            {formatRelativeTime(memory.createdAt)}
                         </p>
 
                     </div>

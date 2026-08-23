@@ -8,6 +8,7 @@ import {
 
 import { addComment, updateComment, deleteComment } from "../../store/slices/memoriesSlice";
 import { useAuth } from "../../hooks/useAuth";
+import formatRelativeTime from "../../utils/formatRelativeTime";
 
 import Button from "../common/Button";
 
@@ -20,53 +21,6 @@ function CommentsSection({ memory }) {
     const { user } = useAuth();
 
     const comments = memory?.comments || [];
-
-    const formatRelativeTime = (createdAt) => {
-        const now = new Date();
-        const commentDate = new Date(createdAt);
-
-        const differenceInSeconds = Math.floor(
-            (now - commentDate) / 1000
-        );
-
-        if (differenceInSeconds < 60) {
-            return "just now";
-        }
-
-        const differenceInMinutes = Math.floor(
-            differenceInSeconds / 60
-        );
-
-        if (differenceInMinutes < 60) {
-            return `${differenceInMinutes}m ago`;
-        }
-
-        const differenceInHours = Math.floor(
-            differenceInMinutes / 60
-        );
-
-        if (differenceInHours < 24) {
-            return `${differenceInHours}h ago`;
-        }
-
-        const differenceInDays = Math.floor(
-            differenceInHours / 24
-        );
-
-        if (differenceInDays < 7) {
-            return `${differenceInDays}d ago`;
-        }
-
-        const differenceInWeeks = Math.floor(
-            differenceInDays / 7
-        );
-
-        if (differenceInWeeks < 4) {
-            return `${differenceInWeeks}w ago`;
-        }
-
-        return commentDate.toLocaleDateString();
-    };
 
     const handleSubmit = () => {
         if(!newComment.trim() || !user || !memory){

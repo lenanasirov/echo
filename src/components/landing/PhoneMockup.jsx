@@ -8,7 +8,7 @@ const screens = {
         song: "Space Song",
         artist: "Beach House",
 
-        date: "June 14, 2026",
+        createdAt: "Just now",
         location: "📍 Ashdod Beach",
 
         mood: "🌙 Nostalgic",
@@ -23,7 +23,7 @@ const screens = {
     timeline: {
         memories: [
             {
-                date: "June 14, 2026",
+                createdAt: "Just now",
 
                 image: "📸",
 
@@ -36,7 +36,7 @@ const screens = {
             },
 
             {
-                date: "May 28, 2026",
+                createdAt: "5 minutes ago",
 
                 image: "📸",
 
@@ -49,7 +49,7 @@ const screens = {
             },
 
             {
-                date: "April 09, 2026",
+                createdAt: "1 hour ago",
 
                 image: "📸",
 
@@ -295,7 +295,7 @@ function PhoneMockup ({ type, title, delay = 0 }) {
                                     {content.memories.map((memory) => (
 
                                         <div
-                                            key={memory.date}
+                                            key={memory.createdAt}
                                             className="
                                                 rounded-2xl
                                                 border
@@ -311,7 +311,7 @@ function PhoneMockup ({ type, title, delay = 0 }) {
                                                     text-zinc-500
                                                 "
                                             >
-                                                {memory.date}
+                                                {memory.createdAt}
                                             </p>
 
 

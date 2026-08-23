@@ -8,6 +8,7 @@ import {
     FiMusic,
     FiLock
 } from "react-icons/fi";
+import formatRelativeTime from "../../utils/formatRelativeTime";
 
 import { useAuth } from "../../hooks/useAuth";
 import { toggleLike } from "../../store/slices/memoriesSlice";
@@ -157,7 +158,7 @@ function MemoryCard({ memory, isLocked = false }) {
                         sm:shrink-0
                     "
                 >
-                    {memory.date}
+                    {formatRelativeTime(memory.createdAt)}
                 </span>
 
             </div>
