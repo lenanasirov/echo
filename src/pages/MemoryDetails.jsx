@@ -10,6 +10,7 @@ import { useAuth } from "../hooks/useAuth";
 import { deleteMemory } from "../store/slices/memoriesSlice";
 import { deleteImage } from "../utils/imageStorage";
 import { toggleLike } from "../store/slices/memoriesSlice";
+import { canViewMemory, canEditMemory } from "../utils/memoryAccess";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
@@ -27,6 +28,7 @@ import {
 function MemoryDetails() {
     const { user } = useAuth();
     const { memories } = useSelector((state) => state.memories);
+    const { cycle } = useSelector((state) => state.echoCycle);
     
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -43,6 +45,14 @@ function MemoryDetails() {
 
     // check if the memory is owned by the user
     const isOwner = isMemoryOwner(memory, user);  
+
+    const currentCycleMemories = memories.filter(memory => memory.cycleId === cycle?.id);
+
+    const hasCurrentUserPosted = currentCycleMemories.some(memory => memory.user.id === user?.id);
+
+    const canView = canViewMemory(memory, user, cycle, hasCurrentUserPosted);
+
+    const canEdit = canEditMemory(memory, user, cycle);
 
     const { imageUrl, isLoading } = useImage(memory?.image);
 
@@ -145,6 +155,55 @@ function MemoryDetails() {
 
             </div>
         )
+    }
+
+    if (!canView) {
+        const isOtherUserCurrentCycleMemory =
+            !isOwner &&
+            memory.cycleId === cycle?.id;
+
+        return (
+            <div
+                className="
+                    flex
+                    min-h-[70vh]
+                    items-center
+                    justify-center
+                    px-6
+                    text-center
+                "
+            >
+                <div className="max-w-md">
+                    <h1 className="text-3xl font-bold">
+                        {isOtherUserCurrentCycleMemory
+                            ? "Your Echo is waiting."
+                            : "Echo unavailable"}
+                    </h1>
+
+                    <p className="mt-4 text-zinc-400">
+                        {isOtherUserCurrentCycleMemory
+                            ? "Share your own Echo to unlock this memory."
+                            : "This Echo is no longer available to you."}
+                    </p>
+
+                    {isOtherUserCurrentCycleMemory && (
+                        <Link to="/create">
+                            <Button className="mt-8">
+                                Create Echo
+                            </Button>
+                        </Link>
+                    )}
+
+                    {!isOtherUserCurrentCycleMemory && (
+                        <Link to="/feed">
+                            <Button className="mt-8">
+                                Back to Feed
+                            </Button>
+                        </Link>
+                    )}
+                </div>
+            </div>
+        );
     }
 
     if (isLoading) {
@@ -316,28 +375,30 @@ function MemoryDetails() {
                     <div className="flex items-center gap-3">
 
                         {/* Edit */}
-                        <button
-                            onClick={() => navigate(`/memory/${memory.id}/edit`)}
-                            className="
-                                flex
-                                items-center
-                                gap-2
-                                rounded-full
-                                border
-                                border-white/10
-                                bg-white/5
-                                px-4
-                                py-2
-                                text-sm
-                                text-zinc-400
-                                transition
-                                hover:border-purple-500
-                                hover:text-white
-                            "
-                        >
-                            <FiEdit2 />
-                            Edit
-                        </button>
+                        {canEdit && (
+                            <button
+                                onClick={() => navigate(`/memory/${memory.id}/edit`)}
+                                className="
+                                    flex
+                                    items-center
+                                    gap-2
+                                    rounded-full
+                                    border
+                                    border-white/10
+                                    bg-white/5
+                                    px-4
+                                    py-2
+                                    text-sm
+                                    text-zinc-400
+                                    transition
+                                    hover:border-purple-500
+                                    hover:text-white
+                                "
+                            >
+                                <FiEdit2 />
+                                Edit
+                            </button>
+                        )}   
 
                         {/* Delete */ }
                         <button

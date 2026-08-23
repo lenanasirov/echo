@@ -1,9 +1,9 @@
 import { useSelector, useDispatch } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 
 import { updateMemory } from "../store/slices/memoriesSlice";
 import { saveImage } from "../utils/imageStorage";
+import { canEditMemory } from "../utils/memoryAccess";
 import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
 import useImage from "../hooks/useImage";
@@ -21,11 +21,16 @@ function EditMemory(){
         (state) => state.memories
     );
 
+    const { cycle } = useSelector(
+        (state) => state.echoCycle
+    );
+
     const memory = memories.find(
         (memory) => memory.id === Number(id)
     );
 
     const isOwner = isMemoryOwner(memory, user);
+    const canEdit = canEditMemory(memory, user, cycle);
 
     const { imageUrl, isLoading} = useImage(memory?.image);
 
@@ -63,32 +68,62 @@ function EditMemory(){
 
     if (!isOwner) {
         return (
-            <div 
+            <div
                 className="
-                flex
-                min-h-[70vh]
-                items-center
-                justify-center
-                px-6
-                text-center
+                    flex
+                    min-h-[70vh]
+                    items-center
+                    justify-center
+                    px-6
+                    text-center
                 "
             >
                 <div>
                     <h1 className="text-3xl font-bold">
                         Access denied
                     </h1>
-
+    
                     <p className="mt-3 text-zinc-400">
                         You can only edit your own memories.
                     </p>
-
+    
                     <Link to="/feed">
                         <Button className="mt-8">
                             Back to Feed
                         </Button>
                     </Link>
                 </div>
-
+            </div>
+        );
+    }
+    
+    if (!canEdit) {
+        return (
+            <div
+                className="
+                    flex
+                    min-h-[70vh]
+                    items-center
+                    justify-center
+                    px-6
+                    text-center
+                "
+            >
+                <div>
+                    <h1 className="text-3xl font-bold">
+                        Editing unavailable
+                    </h1>
+    
+                    <p className="mt-3 text-zinc-400">
+                        This Echo is from a previous cycle and can no longer be edited.
+                    </p>
+    
+                    <Link to="/feed">
+                        <Button className="mt-8">
+                            Back to Feed
+                        </Button>
+                    </Link>
+                </div>
             </div>
         );
     }

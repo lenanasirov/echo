@@ -23,8 +23,6 @@ function Feed() {
 
     const hasAnyCurrentCycleMemories = currentCycleMemories.length > 0;
 
-    const showWaitingState = hasAnyCurrentCycleMemories &&!hasCurrentUserPosted;
-
     const showEmptyState = !hasAnyCurrentCycleMemories;
 
     return (
@@ -173,42 +171,6 @@ function Feed() {
                             </Link>
                         }
                     />
-                ) : showWaitingState ? (
-                    <EmptyState
-                        title="Your Echo is waiting."
-                        description="Create your Echo to unlock today's memories."
-                        action={
-                            <Link
-                                to="/create"
-                                className="
-                                    mt-6
-                                    inline-flex
-                                    items-center
-                                    gap-2
-                                    rounded-full
-                                    bg-linear-to-r
-                                    from-purple-500
-                                    to-pink-500
-                                    px-5
-                                    py-3
-                                    text-sm
-                                    font-medium
-                                    text-white
-                                    transition
-                                    hover:scale-105
-                                    focus:outline-none
-                                    focus:ring-2
-                                    focus:ring-purple-500
-                                    focus:ring-offset-2
-                                    focus:ring-offset-[#0F0F14]
-                                "
-                            >
-                                <FiPlus />
-                                Create Memory
-                            </Link>
-                        }
-                    />
-                    
                 ) : (
                     <div
                         className="
@@ -231,7 +193,7 @@ function Feed() {
                                 transition={{
                                     delay: index * 0.15
                                 }}>
-                                <MemoryCard  memory={memory} />
+                                <MemoryCard  memory={memory} isLocked={!hasCurrentUserPosted} />
                             </motion.div>    
                         ))}
 
