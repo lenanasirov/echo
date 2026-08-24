@@ -17,20 +17,9 @@ function EmptyState({
             "
         >
             {/* Echo logo */}
-            <div
-                className="
-                    flex
-                    h-16
-                    w-16
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-linear-to-br
-                    from-purple-500/20
-                    to-pink-500/20
-                "
+            <div className="flex items-center justify-center"
             >
-                <Logo showName={false} />
+                <Logo/>
             </div>
 
             {/* Title */}
