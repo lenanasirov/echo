@@ -64,28 +64,56 @@ function Profile() {
                   "
                 >
 
-                  {/* Avatar */}
-                  <div
-                    className="
-                      flex
-                      h-24
-                      w-24
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-linear-to-br
-                      from-purple-500
-                      to-pink-500
-                      text-5xl
-                    "
-                  >
-                    {user.avatar}
+                  {/* Avatar + Streak */}
+                  <div className="relative">
+                      {/* Avatar */}
+                      <div
+                          className="
+                              flex
+                              h-36
+                              w-36
+                              items-center
+                              justify-center
+                              rounded-full
+                              bg-linear-to-br
+                              from-purple-500
+                              to-pink-500
+                              text-6xl
+                          "
+                      >
+                          {user.avatar}
+                      </div>
+
+                      {/* Streak */}
+                      <div
+                          className="
+                              absolute
+                              bottom-0
+                              left-1/2
+                              -translate-x-1/2
+                              translate-y-1/2
+                              whitespace-nowrap
+                              rounded-full
+                              border
+                              border-orange-400/20
+                              bg-[#15151D]
+                              px-4
+                              py-1.5
+                              text-sm
+                              shadow-lg
+                          "
+                      >
+                          <span className="text-base">🔥</span>
+                          <span className="ml-1 font-bold text-white">
+                              {user.streak || 0}
+                          </span>
+                      </div>
                   </div>
 
                   {/* Name */}
                   <h1
                     className="
-                      mt-5
+                      mt-12
                       text-3xl
                       font-bold
                     "

@@ -13,7 +13,9 @@ function createUser(userData) {
         username: userData.username,
         avatar: "🌸",
         email: userData.email,
-        bio: ""
+        bio: "",
+        streak: 0,
+        lastStreakCycleId: null
     };
 }
 
@@ -94,6 +96,30 @@ export function AuthProvider({ children }) {
         saveToStorage("echo-users", updatedUsers);
     };
 
+    const updateStreak = (cycle) => {
+        if (!user || !cycle) {
+            return;
+        }
+    
+        // Only count one Echo per cycle.
+        if (user.lastStreakCycleId === cycle.id) {
+            return;
+        }
+    
+        const currentStreak = user.streak || 0;
+        const lastCycleId = user.lastStreakCycleId || null;
+    
+        const newStreak =
+            lastCycleId === cycle.previousCycleId
+                ? currentStreak + 1
+                : 1;
+    
+        updateProfile({
+            streak: newStreak,
+            lastStreakCycleId: cycle.id
+        });
+    };
+
     const logout = () => {
 
         setUser(null);
@@ -110,6 +136,7 @@ export function AuthProvider({ children }) {
                 login,
                 register, 
                 updateProfile,
+                updateStreak,
                 logout
             }}
         >

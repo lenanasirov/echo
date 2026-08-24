@@ -10,7 +10,7 @@ function CreateMemory() {
     const dispatch = useDispatch();
     const navigate= useNavigate();
 
-    const { user } = useAuth();
+    const { user, updateStreak } = useAuth();
 
     const { cycle } = useSelector(
         (state) => state.echoCycle
@@ -59,6 +59,7 @@ function CreateMemory() {
         };
 
         dispatch(addMemory(newMemory));
+        updateStreak(cycle);
 
         navigate("/feed");
     };
