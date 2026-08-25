@@ -29,14 +29,17 @@ function useEchoCycle() {
         
         // A new cycle has started.
         if (cycle.id !== currentCycle.id) {
+
             const postedInPreviousCycle = memories.some(
                 (memory) => memory.user?.id=== user?.id &&
                             memory.cycleId === cycle.id
             );
 
-            if (postedInPreviousCycle && user?.streak > 0) {
+            // The user missed the previous cycle.
+            if (!postedInPreviousCycle && user?.streak > 0) {
                 updateProfile({
-                    streak: 0
+                    streak: 0,
+                    lastStreakCycleId: null
                 })
             }
 

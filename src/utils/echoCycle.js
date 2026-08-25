@@ -27,10 +27,31 @@ function getRandomNotificationTime(startDate = new Date()) {
     return notificationDate;
 }
 
+function getRandomReminderTime(startDate = new Date()) {
+    const reminderDate = new Date(startDate);
+
+    // Remind the user a few hours after the cycle starts.
+    const minHours = 3;
+    const maxHours = 5;
+
+    const randomHours =
+        Math.floor(
+            Math.random() * (maxHours - minHours + 1)
+        ) + minHours;
+
+    reminderDate.setHours(
+        reminderDate.getHours() + randomHours
+    );
+
+    return reminderDate;
+}
 
 function createEchoCycle(startDate = new Date(), notificationPending = false, previousCycleId = null) { 
     const notificationDate =
         getRandomNotificationTime(startDate);
+
+    const reminderDate =
+        getRandomReminderTime(startDate);
 
     return {
         id: `cycle-${startDate.getTime()}`,
@@ -43,8 +64,13 @@ function createEchoCycle(startDate = new Date(), notificationPending = false, pr
         previousCycleId,
 
         notificationSent: false,
-        
-        notificationPending
+
+        notificationPending,
+
+        reminderAt: 
+            reminderDate.toISOString(),
+
+        reminderSent: false
     };
 }
 
@@ -65,6 +91,7 @@ function getCurrentEchoCycle(existingCycle, now = new Date()) {
 
 export {
     getRandomNotificationTime,
+    getRandomReminderTime,
     createEchoCycle,
     getCurrentEchoCycle
 };

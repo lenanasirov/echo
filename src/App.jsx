@@ -22,14 +22,15 @@ import EchoNotification from "./components/echo/EchoNotification";
 function App() {
   useEchoCycle();
 
-  const { showNotification, dismissNotification } = useEchoNotification();
+  const { notification, dismissNotification } = useEchoNotification();
   
   return (
     <BrowserRouter>
           <ScrollToTop />
 
-          {showNotification && (
+          {notification && (
             <EchoNotification
+              type={notification.type}
               onClose={dismissNotification}
             />
           )}

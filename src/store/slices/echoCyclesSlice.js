@@ -26,13 +26,27 @@ const echoCyclesSlice = createSlice({
             state.cycle.notificationPending = false; // There is no longer a pending notification for this cycle.
 
             saveToStorage("echo-cycle", state.cycle);
-        }
+        },
+
+        markReminderSent: (state) => {
+            if (!state.cycle) {
+                return;
+            }
+        
+            state.cycle.reminderSent = true;
+        
+            saveToStorage(
+                "echo-cycle",
+                state.cycle
+            );
+        },
     }
 });
 
 export const {
     startCycle,
-    markNotificationSent
+    markNotificationSent,
+    markReminderSent
 } = echoCyclesSlice.actions;
 
 export const echoCyclesReducer = echoCyclesSlice.reducer;

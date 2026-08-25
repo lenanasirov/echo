@@ -1,8 +1,11 @@
 import { FiMusic, FiX } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
-function EchoNotification({ onClose }) {
+function EchoNotification({ type, onClose }) {
+
     const navigate = useNavigate();
+
+    const isReminder = type === "reminder";
 
     const handleCreateEcho = () => {
         onClose();
@@ -26,6 +29,7 @@ function EchoNotification({ onClose }) {
                 shadow-2xl
             "
         >
+            {/* Close button */}
             <button
                 type="button"
                 onClick={onClose}
@@ -42,6 +46,7 @@ function EchoNotification({ onClose }) {
                 <FiX />
             </button>
 
+            {/* Icon */}
             <div
                 className="
                     flex
@@ -59,6 +64,7 @@ function EchoNotification({ onClose }) {
                 <FiMusic />
             </div>
 
+            {/* Title */}
             <h2
                 className="
                     mt-4
@@ -67,9 +73,13 @@ function EchoNotification({ onClose }) {
                     text-white
                 "
             >
-                Your new Echo is here
+                {isReminder
+                    ? "🔥 Don't lose your streak"
+                    : "🎵 Your new Echo is here"
+                }
             </h2>
-
+            
+            {/* Message */}
             <p
                 className="
                     mt-2
@@ -78,9 +88,13 @@ function EchoNotification({ onClose }) {
                     text-zinc-400
                 "
             >
-                Capture today's moment and give it a soundtrack.
+                {isReminder
+                    ? "Your next Echo is waiting. Capture today's moment and keep it going."
+                    : "Capture today's moment and give it a soundtrack."
+                }
             </p>
 
+            {/* Action */}
             <button
                 type="button"
                 onClick={handleCreateEcho}
