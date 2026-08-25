@@ -37,8 +37,14 @@ export function AuthProvider({ children }) {
             return false;
         }
 
-        setUser(existingUser);
-        saveToStorage("echo-user", existingUser);
+        const migratedUser = {
+            streak: 0,
+            lastStreakCycleId: null,
+            ...existingUser
+        };
+
+        setUser(migratedUser);
+        saveToStorage("echo-user", migratedUser);
 
         return true;
     };
