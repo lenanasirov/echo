@@ -9,11 +9,13 @@ USE echo;
 
 CREATE TABLE users (
     id BIGINT UNSIGNED PRIMARY KEY,
+
     name VARCHAR(100) NOT NULL,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
-    avatar VARCHAR(255),
-    bio TEXT,
+
+    avatar VARCHAR(255) NULL,
+    bio TEXT NULL,
 
     streak INT UNSIGNED NOT NULL DEFAULT 0,
     last_streak_cycle_id VARCHAR(100) NULL,
@@ -34,13 +36,6 @@ CREATE TABLE echo_cycles (
 
     started_at TIMESTAMP(3) NOT NULL,
     ends_at TIMESTAMP(3) NOT NULL,
-
-    next_notification_at TIMESTAMP(3) NULL,
-    reminder_at TIMESTAMP(3) NULL,
-
-    notification_pending BOOLEAN NOT NULL DEFAULT FALSE,
-    notification_sent BOOLEAN NOT NULL DEFAULT FALSE,
-    reminder_sent BOOLEAN NOT NULL DEFAULT FALSE,
 
     previous_cycle_id VARCHAR(100) NULL,
 
@@ -71,11 +66,10 @@ CREATE TABLE memories (
     song_artist VARCHAR(255) NULL,
 
     mood VARCHAR(100) NULL,
-    caption TEXT,
+    caption TEXT NULL,
     location VARCHAR(255) NULL,
 
-    image_type VARCHAR(50) NULL,
-    image_id VARCHAR(255) NULL,
+    image_url VARCHAR(500) NULL,
 
     created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -153,7 +147,7 @@ CREATE TABLE memory_comments (
 
 
 -- ============================================
--- Add foreign key for user's last streak cycle
+-- User's last streak cycle
 -- ============================================
 
 ALTER TABLE users

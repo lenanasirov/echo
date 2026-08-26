@@ -2,6 +2,11 @@ import express from "express";
 import cors from "cors";
 
 import pool from "./db/connection.js";
+import userRoutes from "./routes/userRoutes.js";
+import memoryRoutes from "./routes/memoryRoutes.js";
+import echoCycleRoutes from "./routes/echoCycleRoutes.js";
+
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -17,6 +22,7 @@ app.get("/api/health", (req, res) => {
     });
 });
 
+// Database health check
 app.get("/api/health/db", async (req, res) => {
     try {
         const connection = await pool.getConnection();
@@ -37,10 +43,18 @@ app.get("/api/health/db", async (req, res) => {
     }
 });
 
+// API routes
+app.use("/api/users", userRoutes);
+app.use("/api/memories", memoryRoutes);
+app.use("/api/echo-cycles", echoCycleRoutes);
 
-const PORT = process.env.PORT || 5000;
+// Error handling
+app.use(errorHandler);
 
 // Start server
+const PORT = process.env.PORT || 5000;
+
+
 app.listen(PORT, () => {
     console.log(`Echo API running on http://localhost:${PORT}`);
 });
