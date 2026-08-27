@@ -31,3 +31,61 @@ export async function getAllMemories() {
 
     return rows;
 }
+
+export async function createMemory(memoryData) {
+    const {
+        id,
+        userId,
+        cycleId,
+        songId,
+        songTitle,
+        songArtist,
+        mood,
+        caption,
+        location,
+        imageUrl
+    } = memoryData;
+
+    await pool.query(
+        `
+        INSERT INTO memories (
+            id,
+            user_id,
+            cycle_id,
+            song_id,
+            song_title,
+            song_artist,
+            mood,
+            caption,
+            location,
+            image_url
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+            id,
+            userId,
+            cycleId,
+            songId || null,
+            songTitle || null,
+            songArtist || null,
+            mood || null,
+            caption || null,
+            location || null,
+            imageUrl || null
+        ]
+    );
+
+    return {
+        id,
+        userId,
+        cycleId,
+        songId: songId || null,
+        songTitle: songTitle || null,
+        songArtist: songArtist || null,
+        mood: mood || null,
+        caption: caption || null,
+        location: location || null,
+        imageUrl: imageUrl || null
+    };
+}

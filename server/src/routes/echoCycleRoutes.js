@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { getEchoCycles } from "../controllers/echoCycleController.js";
+import { getEchoCycles, postEchoCycle } from "../controllers/echoCycleController.js";
 
 const router = Router();
 
 router.get("/", getEchoCycles);
+router.post("/", postEchoCycle);
 
 export default router;
