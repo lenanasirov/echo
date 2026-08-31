@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import { saveImage } from "../utils/imageStorage";
-import { addMemory } from "../store/slices/memoriesSlice";
+import { createMemory } from "../store/slices/memoriesSlice";
 import { useAuth } from "../hooks/useAuth";
 import MemoryForm from "../components/memory/MemoryForm";
 
@@ -33,6 +33,7 @@ function CreateMemory() {
             user: {
                 id: user.id,
                 name: user.name,
+                username: user.username,
                 avatar: user.avatar
             },
 
@@ -58,10 +59,16 @@ function CreateMemory() {
             comments: []
         };
 
-        dispatch(addMemory(newMemory));
-        updateStreak(cycle);
+        //dispatch(addMemory(newMemory));
+        try {
+            await dispatch(createMemory(newMemory)).unwrap();
 
-        navigate("/feed");
+            updateStreak(cycle);
+
+            navigate("/feed");
+        } catch (error) {
+            console.error("Failed to create memory:", error);
+        }
     };
 
     return (
@@ -108,7 +115,10 @@ function CreateMemory() {
                     "
                 >
 
-                    <MemoryForm submitLabel="Save Memory" onSubmit={handleCreate} />
+                    <MemoryForm s
+                        SubmitLabel="Save Memory" 
+                        onSubmit={handleCreate} 
+                    />
 
                 </div>                      
                                 

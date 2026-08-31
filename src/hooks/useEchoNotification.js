@@ -77,7 +77,8 @@ function useEchoNotification() {
          */
         if (
             !hasEchoThisCycle &&
-            !cycle.reminderSent
+            !cycle.reminderSent &&
+            cycle.reminderAt
         ) {
 
             const reminderTime =

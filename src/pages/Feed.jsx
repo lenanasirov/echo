@@ -1,17 +1,30 @@
 import { Link } from "react-router-dom";
 import { FiPlus } from "react-icons/fi";
 import { motion } from "framer-motion";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect } from "react";
 
 import { useAuth } from "../hooks/useAuth";
+import { fetchMemories } from "../store/slices/memoriesSlice";
 import MemoryCard from "../components/memory/MemoryCard";
 import EmptyState from "../components/common/EmptyState";
 
 function Feed() {
+    const dispatch = useDispatch();
+
     const { user } = useAuth();
 
-    const { memories } = useSelector((state) => state.memories);
+    const { memories, status, error } = useSelector(
+        (state) => state.memories
+    );
+
     const { cycle } = useSelector((state) => state.echoCycle);
+
+    useEffect(() => {
+        if (status === "idle") {
+            dispatch(fetchMemories());
+        }
+    }, [status, dispatch]);
 
     const currentCycleMemories = memories.filter(
         (memory) => memory.cycleId === cycle?.id
@@ -135,69 +148,89 @@ function Feed() {
                     </Link>
                 </div>
 
-                {/* Memories */}
-                {showEmptyState ? (
-                    <EmptyState
-                        title="No Echoes yet."
-                        description="Be the first to capture this moment 🎵"
-                        action={
-                            <Link
-                                to="/create"
-                                className="
-                                    mt-6
-                                    inline-flex
-                                    items-center
-                                    gap-2
-                                    rounded-full
-                                    bg-linear-to-r
-                                    from-purple-500
-                                    to-pink-500
-                                    px-5
-                                    py-3
-                                    text-sm
-                                    font-medium
-                                    text-white
-                                    transition
-                                    hover:scale-105
-                                    focus:outline-none
-                                    focus:ring-2
-                                    focus:ring-purple-500
-                                    focus:ring-offset-2
-                                    focus:ring-offset-[#0F0F14]
-                                "
-                            >
-                                <FiPlus />
-                                Create Memory
-                            </Link>
-                        }
-                    />
-                ) : (
-                    <div
-                        className="
-                            mt-12
-                            space-y-8
-                        "
-                    >
-                        
-                        {currentCycleMemories.map((memory, index) => (
-                            <motion.div
-                                key={memory.id}
-                                initial={{
-                                    opacity: 0,
-                                    y: 30
-                                }}
-                                animate={{
-                                    opacity: 1,
-                                    y: 0
-                                }}
-                                transition={{
-                                    delay: index * 0.15
-                                }}>
-                                <MemoryCard  memory={memory} isLocked={!hasCurrentUserPosted} />
-                            </motion.div>    
-                        ))}
-
+                {/* Loading state */}
+                {status === "loading" && (
+                    <div className="mt-12 text-center text-zinc-400">
+                        Loading Echoes...
                     </div>
+                )}
+
+                {/* Error state */}
+                {status === "failed" && (
+                    <div className="mt-12 text-center text-red-400">
+                        {error}
+                    </div>
+                )}
+
+
+                {/* Memories */}
+                {status !== "loading" && status !== "failed" && (
+                    showEmptyState ? (
+                        <EmptyState
+                            title="No Echoes yet."
+                            description="Be the first to capture this moment 🎵"
+                            action={
+                                <Link
+                                    to="/create"
+                                    className="
+                                        mt-6
+                                        inline-flex
+                                        items-center
+                                        gap-2
+                                        rounded-full
+                                        bg-linear-to-r
+                                        from-purple-500
+                                        to-pink-500
+                                        px-5
+                                        py-3
+                                        text-sm
+                                        font-medium
+                                        text-white
+                                        transition
+                                        hover:scale-105
+                                        focus:outline-none
+                                        focus:ring-2
+                                        focus:ring-purple-500
+                                        focus:ring-offset-2
+                                        focus:ring-offset-[#0F0F14]
+                                    "
+                                >
+                                    <FiPlus />
+                                    Create Memory
+                                </Link>
+                            }
+                        />
+                    ) : (
+                        <div
+                            className="
+                                mt-12
+                                space-y-8
+                            "
+                        >
+                            
+                            {currentCycleMemories.map((memory, index) => (
+                                <motion.div
+                                    key={memory.id}
+                                    initial={{
+                                        opacity: 0,
+                                        y: 30
+                                    }}
+                                    animate={{
+                                        opacity: 1,
+                                        y: 0
+                                    }}
+                                    transition={{
+                                        delay: index * 0.15
+                                    }}>
+                                    <MemoryCard  
+                                        memory={memory} 
+                                        isLocked={!hasCurrentUserPosted} 
+                                    />
+                                </motion.div>    
+                            ))}
+
+                        </div>
+                    )
                 )}
 
 

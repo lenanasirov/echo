@@ -1,15 +1,29 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+
 import { useSelector, useDispatch } from "react-redux";
 
-import { getCurrentEchoCycle } from "../utils/echoCycle";
-import { startCycle } from "../store/slices/echoCyclesSlice";
+import {
+    getCurrentEchoCycle,
+    createEchoCycle
+} from "../utils/echoCycle";
+
+import {
+    fetchEchoCycles,
+    postEchoCycle
+} from "../store/slices/echoCyclesSlice";
+
 import { useAuth } from "./useAuth";
 
 function useEchoCycle() {
+
     const dispatch = useDispatch();
 
     const cycle = useSelector(
         (state) => state.echoCycle.cycle
+    );
+
+    const cycleStatus = useSelector(
+        (state) => state.echoCycle.status
     );
 
     const memories = useSelector(
@@ -18,37 +32,94 @@ function useEchoCycle() {
 
     const { user, updateProfile } = useAuth();
 
+    // Prevent creating the same cycle more than once.
+    const isCreatingCycle = useRef(false);
+
+    // Fetch cycles from the backend when the app starts.
     useEffect(() => {
+
+        if (cycleStatus === "idle") {
+            dispatch(fetchEchoCycles());
+        }
+
+    }, [cycleStatus, dispatch]);
+
+
+    // Handle the current cycle.
+    useEffect(() => {
+
+        if (cycleStatus !== "success") {
+            return;
+        }
+
+        // No cycle exists in the backend.
+        // Create the first cycle.
+        if (!cycle) {
+
+            if (isCreatingCycle.current) {
+                return;
+            }
+
+            isCreatingCycle.current = true;
+
+            const newCycle = createEchoCycle();
+
+            dispatch(postEchoCycle(newCycle))
+                .finally(() => {
+                    isCreatingCycle.current = false;
+                });
+
+            return;
+        }
+
         const currentCycle = getCurrentEchoCycle(cycle);
 
-        // First cycle — there is no previous cycle to check.
-        if (!cycle) {
-            dispatch(startCycle(currentCycle));
-            return
-        }
-        
-        // A new cycle has started.
+        // The current cycle has ended.
         if (cycle.id !== currentCycle.id) {
 
             const postedInPreviousCycle = memories.some(
-                (memory) => memory.user?.id=== user?.id &&
-                            memory.cycleId === cycle.id
+                (memory) =>
+                    memory.user?.id === user?.id &&
+                    memory.cycleId === cycle.id
             );
 
             // The user missed the previous cycle.
-            if (!postedInPreviousCycle && user?.streak > 0) {
+            if (
+                !postedInPreviousCycle &&
+                user?.streak > 0
+            ) {
                 updateProfile({
                     streak: 0,
                     lastStreakCycleId: null
-                })
+                });
             }
 
-            dispatch(startCycle(currentCycle));
+            // Prevent duplicate cycle creation.
+            if (isCreatingCycle.current) {                
+                return;
+            }
+
+            isCreatingCycle.current = true;
+
+            // Create the new cycle in the backend.
+            dispatch(postEchoCycle(currentCycle))
+                .finally(() => {
+                    isCreatingCycle.current = false;
+                });
+            
         }
 
-    }, [cycle, memories, user, updateProfile, dispatch]);
+    }, [
+        cycle,
+        cycleStatus,
+        memories,
+        user,
+        updateProfile,
+        dispatch
+    ]);
 
     return cycle;
 }
 
 export default useEchoCycle;
+

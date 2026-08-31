@@ -1,9 +1,15 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import nightDrive from "../../assets/mock-images/night-drive.jpg";
 import nightRain from "../../assets/mock-images/night-rain.jpg";
 import summerSunset from "../../assets/mock-images/summer-sunset.jpg";
+
 import { saveToStorage, getFromStorage } from "../../utils/storage";
+
+import { 
+    getMemories,
+    createMemory as createMemoryRequest
+} from "../../services/memoryService";
 
 const defaultMemories = [
     {
@@ -133,13 +139,51 @@ const defaultMemories = [
 ];
 
 const initialState = {
-    memories: getFromStorage("echo-memories") || defaultMemories
+    memories: getFromStorage("echo-memories") || defaultMemories,
+    status: "idle",
+    error: null
 };
+
+export const fetchMemories = createAsyncThunk(
+    "memories/fetchMemories",
+    async (_, { rejectWithValue }) => {
+        try {
+            const response  = await getMemories();
+
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to fetch memories"
+            );
+        }
+    }
+);
+
+export const createMemory = createAsyncThunk(
+    "memories/createMemory",
+    async (memoryData, { rejectWithValue }) => {
+        try {
+            const response = await createMemoryRequest(memoryData);
+
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to create memory"
+            );
+        }
+    }
+);
 
 
 const memoriesSlice = createSlice({
     name: "memories",
+
     initialState,
+
     reducers: {
         addMemory: (state, action) => {
             state.memories = [
@@ -199,6 +243,7 @@ const memoriesSlice = createSlice({
 
             saveToStorage("echo-memories", state.memories);
         },
+
         addComment: (state, action) => {
             const {memoryId, comment} = action.payload;
 
@@ -218,6 +263,7 @@ const memoriesSlice = createSlice({
 
             saveToStorage("echo-memories", state.memories);
         },
+
         updateComment: (state, action) => {
             const {memoryId, commentId, text} = action.payload;
 
@@ -241,6 +287,7 @@ const memoriesSlice = createSlice({
 
             saveToStorage("echo-memories", state.memories); 
         },
+
         deleteComment: (state, action) => {
             const {memoryId, commentId} = action.payload;
 
@@ -257,8 +304,47 @@ const memoriesSlice = createSlice({
             );
 
             saveToStorage("echo-memories", state.memories);
-        },
+        }
+    },
 
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchMemories.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+
+            .addCase(fetchMemories.fulfilled, (state, action) => {
+                state.status = "success";
+                state.error = null;
+
+                state.memories = action.payload;
+            })
+
+            .addCase(fetchMemories.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            .addCase(createMemory.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+
+            .addCase(createMemory.fulfilled, (state, action) => {
+                state.status = "success";
+                state.error = null;
+
+                state.memories = [
+                    action.payload,
+                    ...state.memories
+                ];
+            })
+
+            .addCase(createMemory.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            });
     }
 });
 
@@ -271,5 +357,6 @@ export const {
     updateComment, 
     deleteComment
 } = memoriesSlice.actions;
+
 
 export const memoriesReducer = memoriesSlice.reducer;

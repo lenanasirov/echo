@@ -1,9 +1,9 @@
-function getRandomNotificationTime(startDate = new Date()) {
-    const notificationDate = new Date(startDate);
+function getRandomCycleEndTime(startDate = new Date()) {
+    const endDate = new Date(startDate);
 
     // Move to the next calendar day
-    notificationDate.setDate(
-        notificationDate.getDate() + 1
+    endDate.setDate(
+        endDate.getDate() + 1
     );
 
     const startHour = 10;
@@ -17,14 +17,14 @@ function getRandomNotificationTime(startDate = new Date()) {
     const randomMinute =
         Math.floor(Math.random() * 60);
 
-    notificationDate.setHours(
+    endDate.setHours(
         randomHour,
         randomMinute,
         0,
         0
     );
 
-    return notificationDate;
+    return endDate;
 }
 
 function getRandomReminderTime(startDate = new Date()) {
@@ -47,29 +47,23 @@ function getRandomReminderTime(startDate = new Date()) {
 }
 
 function createEchoCycle(startDate = new Date(), notificationPending = false, previousCycleId = null) { 
-    const notificationDate =
-        getRandomNotificationTime(startDate);
+    const endDate =
+        getRandomCycleEndTime(startDate);
 
     const reminderDate =
         getRandomReminderTime(startDate);
 
     return {
         id: `cycle-${startDate.getTime()}`,
-
         startedAt: startDate.toISOString(),
-
-        nextNotificationAt:
-            notificationDate.toISOString(),
-
+        endsAt: endDate.toISOString(),
         previousCycleId,
 
         notificationSent: false,
-
         notificationPending,
 
         reminderAt: 
             reminderDate.toISOString(),
-
         reminderSent: false
     };
 }
@@ -79,10 +73,10 @@ function getCurrentEchoCycle(existingCycle, now = new Date()) {
         return createEchoCycle(now);
     }
 
-    const nextNotificationAt =
-        new Date(existingCycle.nextNotificationAt);
+    const endsAt =
+        new Date(existingCycle.endsAt);
 
-    if (now >= nextNotificationAt) {
+    if (now >= endsAt) {
         return createEchoCycle(now, true, existingCycle.id);
     }
 
@@ -90,7 +84,7 @@ function getCurrentEchoCycle(existingCycle, now = new Date()) {
 }
 
 export {
-    getRandomNotificationTime,
+    getRandomCycleEndTime,
     getRandomReminderTime,
     createEchoCycle,
     getCurrentEchoCycle
