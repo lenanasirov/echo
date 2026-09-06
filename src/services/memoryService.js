@@ -68,11 +68,13 @@ export async function createMemory(memoryData) {
 
     const response = await api.post("/memories", payload);
 
+    const mappedMemory = mapMemoryFromApi(response.data.data);
+
     // Convert backend response → frontend memory format
     return {
         ...response,
 
-        data: mapMemoryFromApi(response.data.data)
+        data: mappedMemory
     };
 }
 

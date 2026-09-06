@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
 
 import { saveImage } from "../utils/imageStorage";
 import { createMemory } from "../store/slices/memoriesSlice";
@@ -10,6 +11,8 @@ function CreateMemory() {
     const dispatch = useDispatch();
     const navigate= useNavigate();
 
+    const [error, setError] = useState("");
+
     const { user, updateStreak } = useAuth();
 
     const { cycle } = useSelector(
@@ -17,6 +20,8 @@ function CreateMemory() {
     );
 
     const handleCreate= async ({imageFile, selectedMood, caption, selectedSong}) => {
+        setError("");
+
         if (!cycle) {
             return;
         }
@@ -68,6 +73,7 @@ function CreateMemory() {
             navigate("/feed");
         } catch (error) {
             console.error("Failed to create memory:", error);
+            setError("Couldn't save your Echo. Please check your connection and try again.");
         }
     };
 
@@ -115,9 +121,10 @@ function CreateMemory() {
                     "
                 >
 
-                    <MemoryForm s
-                        SubmitLabel="Save Memory" 
+                    <MemoryForm 
+                        submitLabel="Save Memory" 
                         onSubmit={handleCreate} 
+                        error={error}
                     />
 
                 </div>                      

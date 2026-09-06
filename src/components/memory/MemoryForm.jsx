@@ -18,7 +18,13 @@ const moods = [
     "💙 Calm"
 ];
 
-function MemoryForm({initialMemory = null, initialImagePreview = null, submitLabel="SaveMemory", onSubmit}) {
+function MemoryForm({
+    initialMemory = null, 
+    initialImagePreview = null, 
+    submitLabel="Save Memory", 
+    onSubmit,
+    error = ""
+}) {
     const [selectedMood, setSelectedMood] = useState(initialMemory?.mood || "");
     const [caption, setCaption] = useState(initialMemory?.caption || "");
     const [imageFile, setImageFile] = useState(null);
@@ -349,6 +355,12 @@ function MemoryForm({initialMemory = null, initialImagePreview = null, submitLab
                     gap-3
                 "
             >
+
+                {error && (
+                    <p className="w-full text-sm text-red-400">
+                        {error}
+                    </p>
+                )}
 
                 <Button
                     type="submit"

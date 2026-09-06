@@ -179,10 +179,6 @@ const echoCyclesSlice = createSlice({
                         action.payload.frontendCycle.reminderSent
                 };
 
-                console.log(
-                    "Saving newly created cycle:",
-                    state.cycle
-                );
                 saveToStorage("echo-cycle", state.cycle);
             })
 

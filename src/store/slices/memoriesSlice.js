@@ -319,6 +319,8 @@ const memoriesSlice = createSlice({
                 state.error = null;
 
                 state.memories = action.payload;
+
+                saveToStorage("echo-memories", state.memories);
             })
 
             .addCase(fetchMemories.rejected, (state, action) => {
@@ -339,6 +341,8 @@ const memoriesSlice = createSlice({
                     action.payload,
                     ...state.memories
                 ];
+
+                saveToStorage("echo-memories", state.memories);
             })
 
             .addCase(createMemory.rejected, (state, action) => {

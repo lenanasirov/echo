@@ -14,7 +14,7 @@ function Feed() {
 
     const { user } = useAuth();
 
-    const { memories, status, error } = useSelector(
+    const { memories, status} = useSelector(
         (state) => state.memories
     );
 
@@ -155,16 +155,21 @@ function Feed() {
                     </div>
                 )}
 
-                {/* Error state */}
-                {status === "failed" && (
-                    <div className="mt-12 text-center text-red-400">
-                        {error}
+                {/* Offline / Error state */}
+                {status === "failed" && memories.length > 0 && (
+                    <div className="mt-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm text-zinc-400">
+                        You're offline. Showing your saved memories.
+                    </div>
+                )}
+                
+                {status === "failed" && memories.length === 0 && (
+                    <div className="mt-12 text-center text-zinc-400">
+                        Couldn't connect to the server.
                     </div>
                 )}
 
-
                 {/* Memories */}
-                {status !== "loading" && status !== "failed" && (
+                {status !== "loading" && (
                     showEmptyState ? (
                         <EmptyState
                             title="No Echoes yet."
