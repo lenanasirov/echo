@@ -1,145 +1,13 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import nightDrive from "../../assets/mock-images/night-drive.jpg";
-import nightRain from "../../assets/mock-images/night-rain.jpg";
-import summerSunset from "../../assets/mock-images/summer-sunset.jpg";
-
-import { saveToStorage, getFromStorage } from "../../utils/storage";
-
 import { 
     getMemories,
     createMemory as createMemoryRequest
 } from "../../services/memoryService";
 
-const defaultMemories = [
-    {
-        id: 1,
-
-        cycleId: "cycle-2026-07-23",
-
-        user: {
-            id: 1,
-            name: "Lena",
-            avatar: "🌸"
-        },
-
-        image: nightDrive,
-
-        song: {
-            title: "Space Song",
-            artist: "Beach House"
-        },
-
-        mood: "🌙 Nostalgic",
-
-        caption:
-            "Late night drive.",
-
-        location:
-            "Ashdod, Israel",
-
-        date:
-            "July 23, 2026",
-
-        likes: 12,
-        likedBy: [],
-
-        comments: [
-            {
-                id: 1,
-                userId: 2,
-                username: "maya",
-                avatar: "🌻",
-                text: "This song is perfect for a night drive!",
-                createdAt: "2026-07-23T21:30:00.000Z"
-            },
-            {
-                id: 2,
-                userId: 3,
-                username: "daniel",
-                avatar: "🎧",
-                text: "Love this one 🎵",
-                createdAt: "2026-07-23T22:15:00.000Z"
-            }
-        ]
-    },
-
-
-    {
-        id: 2,
-
-        cycleId: "cycle-2026-07-20",
-
-        user: {
-            id: 2,
-            name: "Maya",
-            avatar: "🌻"
-        },
-
-        image: summerSunset,
-
-        song: {
-            title: "Yellow",
-            artist: "Coldplay"
-        },
-
-        mood: "☀️ Happy",
-
-        caption:
-            "A perfect summer evening.",
-
-        location:
-            "Tel Aviv, Israel",
-
-        date:
-            "July 20, 2026",
-
-        likes: 24,
-        likedBy: [],
-
-        comments: []
-    },
-
-
-    {
-        id: 3,
-
-        cycleId: "cycle-2026-07-18",
-
-        user: {
-            id: 3,
-            name: "Daniel",
-            avatar: "🎧"
-        },
-
-        image: nightRain,
-
-        song: {
-            title: "The Night We Met",
-            artist: "Lord Huron"
-        },
-
-        mood:
-            "💙 Melancholic",
-
-        caption:
-            "Some songs stay forever.",
-
-        location:
-            "Jerusalem, Israel",
-
-        date:
-            "July 18, 2026",
-
-        likes: 18,
-        likedBy: [],
-
-        comments: []
-    }
-];
 
 const initialState = {
-    memories: getFromStorage("echo-memories") || defaultMemories,
+    memories: [],
     status: "idle",
     error: null
 };
@@ -190,8 +58,6 @@ const memoriesSlice = createSlice({
                 action.payload,
                 ...state.memories
             ];
-
-            saveToStorage("echo-memories", state.memories);
         },
 
         updateMemory: (state, action) => {
@@ -201,7 +67,6 @@ const memoriesSlice = createSlice({
 
             if (index !== -1) {
                 state.memories[index] = action.payload;
-                saveToStorage("echo-memories", state.memories);
             }
         },
 
@@ -212,7 +77,6 @@ const memoriesSlice = createSlice({
 
             if (index !== -1) {
                 state.memories.splice(index, 1);
-                saveToStorage("echo-memories", state.memories);
             }
         },
 
@@ -240,8 +104,6 @@ const memoriesSlice = createSlice({
                 memory.likedBy.splice(userIndex, 1);
                 memory.likes--;
             }
-
-            saveToStorage("echo-memories", state.memories);
         },
 
         addComment: (state, action) => {
@@ -260,8 +122,6 @@ const memoriesSlice = createSlice({
             }
 
             memory.comments.push(comment);
-
-            saveToStorage("echo-memories", state.memories);
         },
 
         updateComment: (state, action) => {
@@ -284,8 +144,6 @@ const memoriesSlice = createSlice({
             }
 
             comment.text = text;
-
-            saveToStorage("echo-memories", state.memories); 
         },
 
         deleteComment: (state, action) => {
@@ -302,8 +160,6 @@ const memoriesSlice = createSlice({
             memory.comments = memory.comments.filter(
                 (comment) => comment.id !== commentId
             );
-
-            saveToStorage("echo-memories", state.memories);
         }
     },
 
@@ -317,10 +173,7 @@ const memoriesSlice = createSlice({
             .addCase(fetchMemories.fulfilled, (state, action) => {
                 state.status = "success";
                 state.error = null;
-
                 state.memories = action.payload;
-
-                saveToStorage("echo-memories", state.memories);
             })
 
             .addCase(fetchMemories.rejected, (state, action) => {
@@ -341,8 +194,6 @@ const memoriesSlice = createSlice({
                     action.payload,
                     ...state.memories
                 ];
-
-                saveToStorage("echo-memories", state.memories);
             })
 
             .addCase(createMemory.rejected, (state, action) => {

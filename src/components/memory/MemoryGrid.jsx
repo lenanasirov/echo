@@ -64,7 +64,7 @@ function MemoryGridItem({ memory }) {
                         "
                     />
                 ) : (
-                                        <div
+                    <div
                         className="
                             flex
                             h-full

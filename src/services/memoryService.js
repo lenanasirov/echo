@@ -28,9 +28,14 @@ function mapMemoryFromApi(memory) {
         caption: memory.caption,
         location: memory.location,
 
-        image: memory.image_url,
+        image: memory.image_url?.startsWith("indexeddb:")
+            ? {
+                type: "indexeddb",
+                id: Number(memory.image_url.replace("indexeddb:", ""))
+            }
+            : memory.image_url,
 
-        date: memory.created_at,
+        createdAt: memory.created_at,
 
         likes: 0,
         likedBy: [],
@@ -63,7 +68,9 @@ export async function createMemory(memoryData) {
         caption: memoryData.caption ?? null,
         location: memoryData.location ?? null,
 
-        imageUrl: null
+        imageUrl: memoryData.image
+            ? `indexeddb:${memoryData.image.id}`
+            : null
     };
 
     const response = await api.post("/memories", payload);
