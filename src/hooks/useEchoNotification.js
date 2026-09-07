@@ -15,8 +15,12 @@ function useEchoNotification() {
 
     const { user } = useAuth();
 
-    const { cycle } = useSelector(
-        (state) => state.echoCycle
+    const cycle  = useSelector(
+        (state) => state.echoCycle.cycle
+    );
+
+    const cycleUI = useSelector(
+        (state) => state.echoCycle.ui
     );
 
     const { memories } = useSelector(
@@ -27,7 +31,14 @@ function useEchoNotification() {
 
     useEffect(() => {
 
-        if (!cycle || !user) {
+        if (!cycle || !cycleUI || !user) {
+            return;
+        }
+
+        /* 
+        * Make sure the UI state belongs to the current cycle. 
+        */
+        if (cycleUI.cycleId !== cycle.id) {
             return;
         }
 
@@ -51,8 +62,8 @@ function useEchoNotification() {
          * getCurrentEchoCycle().
          */
         if (
-            cycle.notificationPending &&
-            !cycle.notificationSent
+            cycleUI.notificationPending &&
+            !cycleUI.notificationSent
         ) {
             const timeout = setTimeout(() => {
 
@@ -77,12 +88,12 @@ function useEchoNotification() {
          */
         if (
             !hasEchoThisCycle &&
-            !cycle.reminderSent &&
-            cycle.reminderAt
+            !cycleUI.reminderSent &&
+            cycleUI.reminderAt
         ) {
 
             const reminderTime =
-                new Date(cycle.reminderAt).getTime();
+                new Date(cycleUI.reminderAt).getTime();
 
             const now = Date.now();
 
@@ -106,6 +117,7 @@ function useEchoNotification() {
 
     }, [
         cycle,
+        cycleUI,
         memories,
         user,
         dispatch

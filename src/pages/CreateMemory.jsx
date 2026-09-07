@@ -1,15 +1,21 @@
 import { useNavigate } from "react-router-dom";
+
 import { useDispatch, useSelector } from "react-redux";
+
 import { useState } from "react";
 
 import { saveImage } from "../utils/imageStorage";
+
 import { createMemory } from "../store/slices/memoriesSlice";
+
 import { useAuth } from "../hooks/useAuth";
+
 import MemoryForm from "../components/memory/MemoryForm";
 
 function CreateMemory() {
     const dispatch = useDispatch();
-    const navigate= useNavigate();
+
+    const navigate = useNavigate();
 
     const [error, setError] = useState("");
 
@@ -19,7 +25,12 @@ function CreateMemory() {
         (state) => state.echoCycle
     );
 
-    const handleCreate= async ({imageFile, selectedMood, caption, selectedSong}) => {
+    const handleCreate = async ({
+        imageFile,
+        selectedMood,
+        caption,
+        selectedSong
+    }) => {
         setError("");
 
         if (!cycle) {
@@ -28,52 +39,64 @@ function CreateMemory() {
 
         const memoryId = Date.now();
 
-        await saveImage(memoryId, imageFile);
-
-        const newMemory = {
-            id: memoryId,
-
-            cycleId: cycle.id,
-
-            user: {
-                id: user.id,
-                name: user.name,
-                username: user.username,
-                avatar: user.avatar
-            },
-
-            image: {
-                type: "indexeddb",
-                id: memoryId
-            },
-
-            song: selectedSong,
-
-            mood: selectedMood,
-
-            caption,
-
-            location: "Ashdod, Israel",
-
-            createdAt: new Date().toISOString(),
-
-            likes: 0,
-
-            likedBy: [],
-
-            comments: []
-        };
-
-        //dispatch(addMemory(newMemory));
         try {
-            await dispatch(createMemory(newMemory)).unwrap();
+            await saveImage(
+                memoryId,
+                imageFile
+            );
+
+            const newMemory = {
+                id: memoryId,
+
+                cycleId: cycle.id,
+
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    username: user.username,
+                    avatar: user.avatar
+                },
+
+                image: {
+                    type: "indexeddb",
+                    id: memoryId
+                },
+
+                song: selectedSong,
+
+                mood: selectedMood,
+
+                caption,
+
+                location: "Ashdod, Israel",
+
+                createdAt: new Date().toISOString(),
+
+                likes: 0,
+
+                likedBy: [],
+
+                comments: []
+            };
+
+            // dispatch(addMemory(newMemory));
+
+            await dispatch(
+                createMemory(newMemory)
+            ).unwrap();
 
             updateStreak(cycle);
 
             navigate("/feed");
         } catch (error) {
-            console.error("Failed to create memory:", error);
-            setError("Couldn't save your Echo. Please check your connection and try again.");
+            console.error(
+                "Failed to create memory:",
+                error
+            );
+
+            setError(
+                "Couldn't save your Echo. Please check your connection and try again."
+            );
         }
     };
 
@@ -91,7 +114,6 @@ function CreateMemory() {
                     max-w-3xl
                 "
             >
-
                 <h1
                     className="
                         text-4xl
@@ -108,7 +130,7 @@ function CreateMemory() {
                     "
                 >
                     Capture a moment and give it a soundtrack.
-                </p>     
+                </p>
 
                 <div
                     className="
@@ -120,17 +142,13 @@ function CreateMemory() {
                         p-8
                     "
                 >
-
-                    <MemoryForm 
-                        submitLabel="Save Memory" 
-                        onSubmit={handleCreate} 
+                    <MemoryForm
+                        submitLabel="Save Memory"
+                        onSubmit={handleCreate}
                         error={error}
                     />
-
-                </div>                      
-                                
-            </div>            
-
+                </div>
+            </div>
         </section>
     );
 }

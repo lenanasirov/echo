@@ -1,11 +1,35 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+
 import { saveToStorage, getFromStorage } from "../../utils/storage";
-import { getEchoCycles, createEchoCycle } from "../../services/echoCycleService";
+
+import {
+    getEchoCycles,
+    createEchoCycle
+} from "../../services/echoCycleService";
+
 import { getRandomReminderTime } from "../../utils/echoCycle";
 
-const initialState= {
-    cycle: getFromStorage("echo-cycle") || null,
+function getInitialCycleUIState() {
+    return (
+        getFromStorage("echo-cycle-ui") || {
+            cycleId: null,
+            notificationSent: false,
+            notificationPending: false,
+            reminderAt: null,
+            reminderSent: false
+        }
+    );
+}
+
+const initialState = {
+    // The Echo Cycle itself is owned by the backend.
+    cycle: null,
+
+    // Frontend-only notification/reminder state.
+    ui: getInitialCycleUIState(),
+
     status: "idle",
+
     error: null
 };
 
@@ -26,26 +50,25 @@ export const fetchEchoCycles = createAsyncThunk(
     }
 );
 
-export const postEchoCycle = createAsyncThunk( 
-    "echoCycle/postEchoCycle", 
-    async (cycleData, { rejectWithValue }) => { 
-        try { 
-            const response = await createEchoCycle(cycleData); 
+export const postEchoCycle = createAsyncThunk(
+    "echoCycle/postEchoCycle",
+    async (cycleData, { rejectWithValue }) => {
+        try {
+            const response = await createEchoCycle(cycleData);
 
             return {
                 backendCycle: response.data,
                 frontendCycle: cycleData
             };
-        } catch (error) { 
+        } catch (error) {
             return rejectWithValue(
-                 error.response?.data?.message ||
-                 error.message || 
-                 "Failed to create echo cycle" 
-            ); 
-        } 
-    } 
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to create echo cycle"
+            );
+        }
+    }
 );
-
 
 const echoCyclesSlice = createSlice({
     name: "echoCycle",
@@ -56,7 +79,17 @@ const echoCyclesSlice = createSlice({
         startCycle: (state, action) => {
             state.cycle = action.payload;
 
-            saveToStorage("echo-cycle", state.cycle);
+            saveToStorage("echo-cycle-ui", {
+                cycleId: state.cycle.id,
+                notificationSent:
+                    state.ui.notificationSent,
+                notificationPending:
+                    state.ui.notificationPending,
+                reminderAt:
+                    state.ui.reminderAt,
+                reminderSent:
+                    state.ui.reminderSent
+            });
         },
 
         markNotificationSent: (state) => {
@@ -64,28 +97,50 @@ const echoCyclesSlice = createSlice({
                 return;
             }
 
-            state.cycle.notificationSent = true; //The notification for this cycle has been triggered.
-            state.cycle.notificationPending = false; // There is no longer a pending notification for this cycle.
+            state.ui.notificationSent = true;
+            state.ui.notificationPending = false;
 
-            saveToStorage("echo-cycle", state.cycle);
+            saveToStorage("echo-cycle-ui", {
+                cycleId: state.cycle.id,
+                notificationSent:
+                    state.ui.notificationSent,
+                notificationPending:
+                    state.ui.notificationPending,
+                reminderAt:
+                    state.ui.reminderAt,
+                reminderSent:
+                    state.ui.reminderSent
+            });
         },
 
         markReminderSent: (state) => {
             if (!state.cycle) {
                 return;
             }
-        
-            state.cycle.reminderSent = true;
-        
-            saveToStorage(
-                "echo-cycle",
-                state.cycle
-            );
-        },
+
+            state.ui.reminderSent = true;
+
+            saveToStorage("echo-cycle-ui", {
+                cycleId: state.cycle.id,
+                notificationSent:
+                    state.ui.notificationSent,
+                notificationPending:
+                    state.ui.notificationPending,
+                reminderAt:
+                    state.ui.reminderAt,
+                reminderSent:
+                    state.ui.reminderSent
+            });
+        }
     },
+
     extraReducers: (builder) => {
         builder
+
+            // --------------------------------------------------
             // Fetch cycles
+            // --------------------------------------------------
+
             .addCase(fetchEchoCycles.pending, (state) => {
                 state.status = "loading";
                 state.error = null;
@@ -97,54 +152,78 @@ const echoCyclesSlice = createSlice({
 
                 const latestCycle = action.payload[0];
 
-                if(!latestCycle) {
+                // No cycles exist in the backend.
+                // useEchoCycle will create the first one.
+                if (!latestCycle) {
                     state.cycle = null;
                     return;
                 }
 
-                const storedCycle = getFromStorage("echo-cycle");
+                const storedUIState =
+                    getFromStorage("echo-cycle-ui");
 
-                // The same cycle already exists in localStorage.
-                if (storedCycle  && storedCycle.id === latestCycle.id) {
-                    state.cycle = {
-                        ...storedCycle,
+                /*
+                 * The stored UI state belongs to the same
+                 * backend cycle.
+                 */
+                if (
+                    storedUIState &&
+                    storedUIState.cycleId === latestCycle.id
+                ) {
+                    state.ui = {
+                        cycleId: storedUIState.cycleId,
 
-                        // Preserve frontend-only state
                         notificationSent:
-                            storedCycle.notificationSent,
+                            storedUIState.notificationSent,
 
                         notificationPending:
-                            storedCycle.notificationPending,
+                            storedUIState.notificationPending,
 
                         reminderAt:
-                            storedCycle.reminderAt,
+                            storedUIState.reminderAt,
 
                         reminderSent:
-                            storedCycle.reminderSent
+                            storedUIState.reminderSent
                     };
-                // The backend has a cycle, but this
-                // browser has no frontend state for it.
                 } else {
-                    const reminderAt = 
+                    /*
+                     * The backend has a cycle, but this browser
+                     * has no UI state for that cycle yet.
+                     */
+                    const reminderAt =
                         getRandomReminderTime(
                             new Date(
                                 latestCycle.startedAt
                             )
                         ).toISOString();
 
-                    state.cycle = {
-                        ...latestCycle,
+                    state.ui = {
+                        cycleId: latestCycle.id,
 
-                        // Frontend-only state
                         notificationSent: false,
+
                         notificationPending: false,
+
                         reminderAt,
+
                         reminderSent: false
                     };
 
+                    saveToStorage("echo-cycle-ui", {
+                        cycleId: latestCycle.id,
+
+                        notificationSent: false,
+
+                        notificationPending: false,
+
+                        reminderAt,
+
+                        reminderSent: false
+                    });
                 }
 
-                saveToStorage("echo-cycle", state.cycle);
+                // The cycle itself comes only from the backend.
+                state.cycle = latestCycle;
             })
 
             .addCase(fetchEchoCycles.rejected, (state, action) => {
@@ -152,7 +231,10 @@ const echoCyclesSlice = createSlice({
                 state.error = action.payload;
             })
 
+            // --------------------------------------------------
             // Create cycle
+            // --------------------------------------------------
+
             .addCase(postEchoCycle.pending, (state) => {
                 state.status = "loading";
                 state.error = null;
@@ -162,10 +244,18 @@ const echoCyclesSlice = createSlice({
                 state.status = "success";
                 state.error = null;
 
-                state.cycle = {
-                    ...action.payload.backendCycle,
+                /*
+                 * The actual cycle comes from the backend.
+                 */
+                state.cycle = action.payload.backendCycle;
 
-                    // Preserve frontend-only state
+                /*
+                 * Notification/reminder state remains
+                 * frontend-only.
+                 */
+                state.ui = {
+                    cycleId: state.cycle.id,
+
                     notificationSent:
                         action.payload.frontendCycle.notificationSent,
 
@@ -179,14 +269,28 @@ const echoCyclesSlice = createSlice({
                         action.payload.frontendCycle.reminderSent
                 };
 
-                saveToStorage("echo-cycle", state.cycle);
+                saveToStorage("echo-cycle-ui", {
+                    cycleId: state.ui.cycleId,
+
+                    notificationSent:
+                        state.ui.notificationSent,
+
+                    notificationPending:
+                        state.ui.notificationPending,
+
+                    reminderAt:
+                        state.ui.reminderAt,
+
+                    reminderSent:
+                        state.ui.reminderSent
+                });
             })
 
             .addCase(postEchoCycle.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
             });
-    },
+    }
 });
 
 export const {
@@ -196,3 +300,4 @@ export const {
 } = echoCyclesSlice.actions;
 
 export const echoCyclesReducer = echoCyclesSlice.reducer;
+
