@@ -64,3 +64,59 @@ export async function createUser(userData) {
         lastStreakCycleId: null
     };
 }
+
+export async function updateUser(userId, userData) {
+    const {
+        name,
+        username,
+        email,
+        avatar,
+        bio,
+        streak, 
+        lastStreakCycleId
+    } = userData;
+
+    await pool.query(
+        `
+        UPDATE users
+        SET
+            name = ?,
+            username = ?,
+            email = ?,
+            avatar = ?,
+            bio = ?,
+            streak = ?,
+            last_streak_cycle_id = ?
+        WHERE id = ?
+        `,
+        [
+            name,
+            username,
+            email,
+            avatar || null,
+            bio || null,
+            streak ?? 0,
+            lastStreakCycleId || null,
+            userId
+        ]
+    );
+
+    const [rows] = await pool.query(
+        `
+        SELECT
+            id,
+            name,
+            username,
+            email,
+            avatar,
+            bio,
+            streak,
+            last_streak_cycle_id
+        FROM users
+        WHERE id = ?
+        `,
+        [userId]
+    );
+
+    return rows[0];
+}

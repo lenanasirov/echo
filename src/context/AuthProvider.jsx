@@ -5,6 +5,7 @@ import {
     getFromStorage,
     removeFromStorage
 } from "../utils/storage";
+import { updateUser } from "../services/userService";
 
 function createUser(userData) {
     return {
@@ -75,34 +76,35 @@ export function AuthProvider({ children }) {
         return true;
     };
 
-    const updateProfile = (profileData) => {
+    const updateProfile = async (profileData) => {
 
         if (!user) {
             return;
         }
 
-        const updatedUser = {
-            ...user,
-            ...profileData
-        };
+        try {
+            const response = await updateUser(
+                user.id, 
+                {
+                    ...user,
+                    ...profileData
+                }
+            );
 
-        setUser(updatedUser);
+            const updatedUser = response.data;
 
-        // Update active session
-        saveToStorage("echo-user", updatedUser);
+            setUser(updatedUser);
 
-        const users = getFromStorage("echo-users") || [];
+            saveToStorage("echo-user", updatedUser);
 
-        const updatedUsers = users.map((storedUser) =>
-            storedUser.id === updatedUser.id
-                ? updatedUser
-                : storedUser
-        );
-
-        saveToStorage("echo-users", updatedUsers);
+            return true;
+        } catch (error) {
+            console.error("Failed to update user:", error);
+            return false;
+        }
     };
 
-    const updateStreak = (cycle) => {
+    const updateStreak = async (cycle) => {
         if (!user || !cycle) {
             return;
         }
@@ -120,7 +122,7 @@ export function AuthProvider({ children }) {
                 ? currentStreak + 1
                 : 1;
     
-        updateProfile({
+        await updateProfile({
             streak: newStreak,
             lastStreakCycleId: cycle.id
         });
