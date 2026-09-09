@@ -30,6 +30,10 @@ function useEchoCycle() {
         (state) => state.memories.memories
     );
 
+    const memoriesStatus = useSelector(
+        (state) => state.memories.status
+    );
+
     const { user, updateProfile } = useAuth();
 
     // Prevent creating the same cycle more than once.
@@ -48,7 +52,10 @@ function useEchoCycle() {
     // Handle the current cycle.
     useEffect(() => {
 
-        if (cycleStatus !== "success") {
+        if (
+            cycleStatus !== "success" || 
+            memoriesStatus !== "success"
+        ) {
             return;
         }
 
@@ -112,6 +119,7 @@ function useEchoCycle() {
     }, [
         cycle,
         cycleStatus,
+        memoriesStatus,
         memories,
         user,
         updateProfile,
