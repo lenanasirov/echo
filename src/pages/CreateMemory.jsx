@@ -34,6 +34,9 @@ function CreateMemory() {
         setError("");
 
         if (!cycle) {
+            setError(
+                "Couldn't save your Echo. Please check your connection and try again."
+            );
             return;
         }
 

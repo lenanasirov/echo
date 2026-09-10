@@ -23,7 +23,7 @@ function useEchoNotification() {
         (state) => state.echoCycle.ui
     );
 
-    const { memories } = useSelector(
+    const { memories, status: memoriesStatus } = useSelector(
         (state) => state.memories
     );
 
@@ -32,6 +32,10 @@ function useEchoNotification() {
     useEffect(() => {
 
         if (!cycle || !cycleUI || !user) {
+            return;
+        }
+
+        if (memoriesStatus !== "success") {
             return;
         }
 
@@ -119,6 +123,7 @@ function useEchoNotification() {
         cycle,
         cycleUI,
         memories,
+        memoriesStatus,
         user,
         dispatch
     ]);
