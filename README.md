@@ -4,10 +4,10 @@ A music-focused social diary where users capture the soundtrack of their moments
 
 Echo allows users to share authentic experiences through:
 
-🎵 A song  
-😊 A mood  
-📸 A photo  
-💭 A personal thought  
+🎵 A song
+😊 A mood
+📸 A photo
+💭 A personal thought
 
 Instead of creating a curated online identity, Echo focuses on capturing real moments and the emotions connected to them.
 
@@ -55,23 +55,160 @@ The design direction:
 
 ## Frontend
 
-- React
-- Vite
-- Redux Toolkit
-- React Router
-- Tailwind CSS
-- Framer Motion
+* React
+* Vite
+* Redux Toolkit
+* React Router
+* Tailwind CSS
+* Framer Motion
+* React Icons
 
 ## Backend
 
-- Node.js
-- Express.js
-- MySQL
+* Node.js
+* Express.js
+* MySQL
+* Axios
 
-## External Services
+## Local Storage
 
-- Spotify API
-- Cloudinary (image storage)
+* localStorage — temporary frontend session/UI state
+* IndexedDB — locally stored uploaded image files
+
+## Planned External Services
+
+* Spotify API — planned
+* Cloudinary — planned
+
+These external services are not currently integrated. Images currently remain in the browser's IndexedDB storage.
+
+---
+
+# 🏗 Application Architecture
+
+Echo follows a client-server architecture where the backend and MySQL database are the source of truth for persistent application data.
+
+```text
+                    ┌──────────────┐
+                    │    MySQL     │
+                    │   Database   │
+                    └──────▲───────┘
+                           │
+                       Services
+                           │
+                       Controllers
+                           │
+                         Routes
+                           │
+                    ┌──────▼───────┐
+                    │ Express API  │
+                    └──────▲───────┘
+                           │
+                         Axios
+                           │
+                    ┌──────▼───────┐
+                    │    Redux     │
+                    │    Toolkit   │
+                    └──────▲───────┘
+                           │
+                    ┌──────▼───────┐
+                    │    React     │
+                    │      UI      │
+                    └──────────────┘
+```
+
+### Data Flow
+
+Persistent application data follows this flow:
+
+**React UI → Redux → API Service → Express API → MySQL**
+
+When data is loaded:
+
+**MySQL → Express API → API Service → Redux → React UI**
+
+Redux acts as the main frontend application state, while MySQL provides persistent storage across refreshes, browser sessions, and different browsers.
+
+The frontend uses a centralized API/service layer rather than communicating with the backend directly from UI components.
+
+---
+
+# 💾 Persistence Architecture
+
+Echo currently uses different storage mechanisms for different types of data.
+
+## Backend / MySQL
+
+Persistent application data is stored in MySQL:
+
+* Users
+* User profile information
+* Echo streak data
+* Echo cycles
+* Memories
+* Memory metadata
+
+The backend is the source of truth for this data.
+
+```text
+React
+  ↓
+Redux
+  ↓
+API
+  ↓
+Express
+  ↓
+MySQL
+```
+
+## localStorage
+
+localStorage is currently used only for frontend-specific or temporary state.
+
+### `echo-user`
+
+Stores the currently active mock-authenticated user locally.
+
+This is temporary compatibility state used while real authentication has not yet been implemented.
+
+The actual user record and profile data are stored in MySQL.
+
+### `echo-cycle-ui`
+
+Stores frontend-only Echo cycle state such as:
+
+* Notification state
+* Reminder state
+* Reminder timing
+* Notification/reminder status
+
+The actual Echo cycle itself is stored in MySQL.
+
+```text
+localStorage
+├── echo-user       → temporary mock session state
+└── echo-cycle-ui   → frontend notification/reminder state
+```
+
+The previous persistent keys `echo-users`, `echo-memories`, and `echo-cycle` are no longer used.
+
+## IndexedDB
+
+IndexedDB is currently used for uploaded image files.
+
+```text
+IndexedDB
+└── echo-db
+    └── images
+        └── uploaded image files
+```
+
+Image metadata is associated with memories in MySQL, while the actual image file remains stored locally in the browser.
+
+This means memory metadata can be synchronized across browsers, but locally stored image files are only available in the browser where they were uploaded.
+
+Cloudinary-based image storage is planned for a future iteration.
 
 ---
 
@@ -116,7 +253,7 @@ server/
 ├── .gitignore
 ├── package.json
 └── package-lock.json
-````
+```
 
 ## Layers
 
@@ -132,19 +269,21 @@ server/
 
 API requests follow a layered architecture:
 
-Client → Route → Controller → Service → Database
+**Client → Route → Controller → Service → Database**
 
 For example, creating a memory:
 
-POST `/api/memories`
-
-→ `memoryRoutes.js`
-
-→ `memoryController.js`
-
-→ `memoryService.js`
-
-→ MySQL
+```text
+POST /api/memories
+        ↓
+memoryRoutes.js
+        ↓
+memoryController.js
+        ↓
+memoryService.js
+        ↓
+MySQL
+```
 
 The service layer keeps database operations separate from HTTP request handling, making the backend easier to maintain and extend.
 
@@ -215,7 +354,7 @@ Stores the Echoes created by users.
 | `mood`        | Mood associated with the memory       |
 | `caption`     | Optional personal thought             |
 | `location`    | Optional location                     |
-| `image_url`   | Optional image URL                    |
+| `image_url`   | Optional image reference              |
 | `created_at`  | Memory creation timestamp             |
 
 Each memory belongs to one user and one Echo cycle.
@@ -405,47 +544,9 @@ Retrieves all users.
 
 Users are returned in descending order by `created_at`.
 
-**Response — `200 OK`**
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 123456789,
-      "name": "Lena",
-      "username": "lena",
-      "email": "lena@example.com",
-      "avatar": "🌸",
-      "bio": "Music lover",
-      "streak": 0,
-      "last_streak_cycle_id": null,
-      "created_at": "2026-09-06T12:00:00.000Z"
-    }
-  ]
-}
-```
-
----
-
 ### `POST /api/users`
 
 Creates a new user.
-
-**Request Body**
-
-```json
-{
-  "id": 123456789,
-  "name": "Lena",
-  "username": "lena",
-  "email": "lena@example.com",
-  "avatar": "🌸",
-  "bio": "Music lover"
-}
-```
-
-`avatar` and `bio` are optional.
 
 The database initializes:
 
@@ -453,23 +554,9 @@ The database initializes:
 * `last_streak_cycle_id` to `NULL`
 * `created_at` automatically
 
-**Response — `201 Created`**
+### `PATCH /api/users/:id`
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": 123456789,
-    "name": "Lena",
-    "username": "lena",
-    "email": "lena@example.com",
-    "avatar": "🌸",
-    "bio": "Music lover",
-    "streak": 0,
-    "lastStreakCycleId": null
-  }
-}
-```
+Updates an existing user's profile and persistent streak data.
 
 ---
 
@@ -483,82 +570,11 @@ Memories are returned in descending order by `created_at`.
 
 Each memory includes the associated user's basic information through a database join.
 
-**Response — `200 OK`**
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 123456789,
-      "user_id": 123456789,
-      "cycle_id": "cycle-123456789",
-      "song_id": 1,
-      "song_title": "The Night We Met",
-      "song_artist": "Lord Huron",
-      "mood": "😊 Happy",
-      "caption": "A memorable evening.",
-      "location": "Ashdod, Israel",
-      "image_url": null,
-      "created_at": "2026-09-06T13:26:20.536Z",
-      "user_name": "Lena",
-      "user_username": "lena",
-      "user_avatar": "🌸"
-    }
-  ]
-}
-```
-
----
-
 ### `POST /api/memories`
 
 Creates a new memory.
 
-**Request Body**
-
-```json
-{
-  "id": 123456789,
-  "userId": 123456789,
-  "cycleId": "cycle-123456789",
-  "songId": 1,
-  "songTitle": "The Night We Met",
-  "songArtist": "Lord Huron",
-  "mood": "😊 Happy",
-  "caption": "A memorable evening.",
-  "location": "Ashdod, Israel",
-  "imageUrl": null
-}
-```
-
-Song information, mood, caption, location, and image URL can be `null`.
-
 After creation, the API retrieves the newly created memory together with its associated user information and returns it using the same database response structure as `GET /api/memories`.
-
-**Response — `201 Created`**
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": 123456789,
-    "user_id": 123456789,
-    "cycle_id": "cycle-123456789",
-    "song_id": 1,
-    "song_title": "The Night We Met",
-    "song_artist": "Lord Huron",
-    "mood": "😊 Happy",
-    "caption": "A memorable evening.",
-    "location": "Ashdod, Israel",
-    "image_url": null,
-    "created_at": "2026-09-06T13:26:20.536Z",
-    "user_name": "Lena",
-    "user_username": "lena",
-    "user_avatar": "🌸"
-  }
-}
-```
 
 ---
 
@@ -570,93 +586,70 @@ Retrieves all Echo cycles.
 
 Cycles are returned in descending order by `started_at`.
 
-**Response — `200 OK`**
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "cycle-123456789",
-      "started_at": "2026-09-06T10:00:00.000Z",
-      "ends_at": "2026-09-07T12:00:00.000Z",
-      "previous_cycle_id": "cycle-123456788",
-      "created_at": "2026-09-06T10:00:00.000Z"
-    }
-  ]
-}
-```
-
----
-
 ### `POST /api/echo-cycles`
 
 Creates a new Echo cycle.
 
-**Request Body**
-
-```json
-{
-  "id": "cycle-123456789",
-  "startedAt": "2026-09-06T10:00:00.000Z",
-  "endsAt": "2026-09-07T12:00:00.000Z",
-  "previousCycleId": "cycle-123456788"
-}
-```
-
 `previousCycleId` is optional and is stored as `NULL` when not provided.
 
-The service converts the supplied timestamps into MySQL-compatible timestamp values before storing them.
-
-**Response — `201 Created`**
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "cycle-123456789",
-    "startedAt": "2026-09-06T10:00:00.000Z",
-    "endsAt": "2026-09-07T12:00:00.000Z",
-    "previousCycleId": "cycle-123456788"
-  }
-}
-```
+The service converts supplied timestamps into MySQL-compatible timestamp values before storing them.
 
 ---
 
 ## HTTP Status Codes
 
-| Status Code                 | Usage                         |
-| --------------------------- | ----------------------------- |
-| `200 OK`                    | Successful GET request        |
-| `201 Created`               | Resource successfully created |
-| `500 Internal Server Error` | Server or database error      |
+| Status Code                 | Usage                                        |
+| --------------------------- | -------------------------------------------- |
+| `200 OK`                    | Successful request                           |
+| `201 Created`               | Resource successfully created                |
+| `409 Conflict`              | Resource conflicts with existing unique data |
+| `500 Internal Server Error` | Server or database error                     |
 
 The API is designed to maintain consistent response and error formats as additional endpoints are introduced.
 
 ---
 
-# 🚀 Planned Features
+# ✨ Current Features
 
-## Core Features
+## Core Experience
 
 * [x] React project setup
-* [x] Initial design system planning
-* [ ] User authentication
-* [ ] User profiles
-* [ ] Create moments
-* [ ] Song selection
-* [ ] Mood selection
-* [ ] Photo upload
-* [ ] Friends feed
+* [x] Initial design system
+* [x] Landing page
+* [x] Feed
+* [x] User registration and login flow
+* [x] User profiles
+* [x] Create memories
+* [x] Song selection
+* [x] Mood selection
+* [x] Photo upload
+* [x] Echo cycles
+* [x] Echo cycle notifications and reminders
+* [x] Echo streak tracking
+* [x] Backend persistence
+* [x] MySQL database
+* [x] Redux-based application state
+* [x] Backend loading and error handling
+
+## Social Features
+
+* [x] Feed memory interactions
 * [ ] Comments and reactions
+* [ ] Friends
+* [ ] Full social authentication
 
-## Future Features
+The current authentication flow is intentionally a temporary mock-authentication implementation and does not provide production authentication or authorization.
 
-* [ ] Spotify listening integration
+---
+
+# 🔮 Planned Features
+
+* [ ] Spotify API integration
+* [ ] Cloud-based image storage
+* [ ] Real user authentication
+* [ ] Advanced friend interactions
 * [ ] Personal music statistics
 * [ ] Yearly "Sound Journey" recap
-* [ ] Advanced friend interactions
 * [ ] React Native mobile application
 
 ---
@@ -685,6 +678,30 @@ Coming soon...
 Echo is currently under active development.
 
 The project is being built using a structured workflow with GitHub Issues, feature-based development, and iterative UX improvements.
+
+The current architecture uses **MySQL as the source of truth for persistent application data**, with Redux managing frontend application state.
+
+Persistent data flows through:
+
+```text
+React
+  ↓
+Redux
+  ↓
+API Service
+  ↓
+Express
+  ↓
+MySQL
+```
+
+Browser-specific storage is intentionally limited to:
+
+* Temporary mock authentication session state
+* Frontend notification/reminder state
+* Locally stored image files
+
+Real authentication, cloud image storage, Spotify integration, and additional social functionality remain planned for future iterations.
 
 ---
 
