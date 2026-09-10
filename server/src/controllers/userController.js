@@ -26,6 +26,12 @@ export async function postUser(req, res, next) {
             data: user
         });
     } catch (error) {
+        if (error.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({
+                success: false,
+                message: "An account with this email or username already exists."
+            });
+        }
         next(error);
     }
 }

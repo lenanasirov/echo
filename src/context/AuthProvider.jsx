@@ -5,7 +5,7 @@ import {
     getFromStorage,
     removeFromStorage
 } from "../utils/storage";
-import { updateUser } from "../services/userService";
+import { getUsers, createUser as createUserRequest, updateUser } from "../services/userService";
 
 function createUser(userData) {
     return {
@@ -26,54 +26,65 @@ export function AuthProvider({ children }) {
         return getFromStorage("echo-user");
     });
 
-    const login = (userData) => {
+    const login = async (userData) => {
+        try {
+            const response = await getUsers();
+            const users = response.data;
 
-        const users = getFromStorage("echo-users") || [];
+            
+            const existingUser = users.find(
+                (user) => user.email === userData.email
+            );
 
-        const existingUser = users.find(
-            (user) => user.email === userData.email
-        );
+            if (!existingUser) {
+                return {
+                    success: false,
+                    message: "No account found with this email."
+                };
+            }
 
-        if (!existingUser) {
-            return false;
-        }
+            setUser(existingUser);
+            saveToStorage("echo-user", existingUser);
 
-        const migratedUser = {
-            streak: 0,
-            lastStreakCycleId: null,
-            ...existingUser
+            return {
+                success: true
+            };
+        } catch (error) {
+            console.error("Failed to login:", error);
+            
+            return {
+            success: false,
+            message:
+                error.response?.data?.message ||
+                "Failed to sign in. Please try again."
         };
-
-        setUser(migratedUser);
-        saveToStorage("echo-user", migratedUser);
-
-        return true;
+        }
     };
 
-    const register = (userData) => {
+    const register = async (userData) => {
+        try {
+            const newUser = createUser(userData);
 
-        const users = getFromStorage("echo-users") || [];
+            const response = await createUserRequest(newUser);
+            const createdUser = response.data;
 
-        const existingUser = users.find(
-            (user) => user.email === userData.email
-        );
+            setUser(createdUser);
 
-        if (existingUser) {
-            return false;
+            saveToStorage("echo-user", createdUser);
+
+            return {
+                success: true
+            };
+        } catch (error) {
+            console.error("Failed to register:", error);
+
+            return {
+                success: false,
+                message:
+                    error.response?.data?.message ||
+                    "Failed to create account."
+            };
         }
-
-        const newUser = createUser(userData);
-
-        setUser(newUser);
-
-        saveToStorage("echo-user", newUser);
-
-        saveToStorage("echo-users", [
-            ...users,
-            newUser
-        ]);
-
-        return true;
     };
 
     const updateProfile = async (profileData) => {

@@ -23,22 +23,22 @@ function AuthForm({
 
     const { login, register } = useAuth();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (mode === "login") {
-            const success = login(values);
+            const result = await login(values);
 
-            if (!success) {
-                setError("No account found with this email.");
+            if (!result.success) {
+                setError(result.message);
                 return;
             }
         }
         else {
-            const success = register(values);
+            const result = await register(values);
 
-            if (!success) {
-                setError("An account with this email already exists.");
+            if (!result.success) {
+                setError(result.message);
                 return;
             }
         }
