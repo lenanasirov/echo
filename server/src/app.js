@@ -1,10 +1,13 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import pool from "./db/connection.js";
+
 import userRoutes from "./routes/userRoutes.js";
 import memoryRoutes from "./routes/memoryRoutes.js";
 import echoCycleRoutes from "./routes/echoCycleRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -13,6 +16,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -47,6 +51,7 @@ app.get("/api/health/db", async (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/memories", memoryRoutes);
 app.use("/api/echo-cycles", echoCycleRoutes);
+app.use("/api/auth", authRoutes);
 
 // Error handling
 app.use(errorHandler);

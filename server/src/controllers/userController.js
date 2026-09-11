@@ -38,7 +38,7 @@ export async function postUser(req, res, next) {
 
 export async function patchUser(req, res, next) {
     try {
-        const user = await updateUser(req.params.id, req.body);
+        const user = await updateUser(req.user.id, req.body);
 
         res.status(200).json({
             success: true,
