@@ -15,7 +15,10 @@ export async function getMemories(req, res, next) {
 
 export async function postMemory(req, res, next) {
     try {
-        const memory = await createMemory(req.body);
+        const memory = await createMemory({
+            ...req.body, 
+            userId: req.user.id
+        });
 
         res.status(201).json({
             success: true,
