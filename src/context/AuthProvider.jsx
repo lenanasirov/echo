@@ -1,50 +1,48 @@
-import { useState } from "react";
-import { AuthContext } from "./AuthContext";
-import { 
-    saveToStorage,
-    getFromStorage,
-    removeFromStorage
-} from "../utils/storage";
-import { getUsers, createUser as createUserRequest, updateUser } from "../services/userService";
+import { useState, useEffect } from "react";
 
-function createUser(userData) {
-    return {
-        id: Date.now(),
-        name: userData.username,
-        username: userData.username,
-        avatar: "🌸",
-        email: userData.email,
-        bio: "",
-        streak: 0,
-        lastStreakCycleId: null
-    };
-}
+import { AuthContext } from "./AuthContext";
+
+import { 
+    updateUser 
+} from "../services/userService";
+
+import { 
+    getCurrentUser,
+    loginUser,
+    registerUser,
+    logoutUser
+} from "../services/authService";
 
 export function AuthProvider({ children }) {
 
-    const [user, setUser] = useState(() => {
-        return getFromStorage("echo-user");
-    });
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const restoreSession = async () => {
+            try {
+                const response = await getCurrentUser();
+
+                setUser(response.data);
+            } catch {
+                setUser(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        restoreSession();
+    }, []);
+
 
     const login = async (userData) => {
         try {
-            const response = await getUsers();
-            const users = response.data;
+            const response = await loginUser({
+                email: userData.email,
+                password: userData.password
+            });
 
-            
-            const existingUser = users.find(
-                (user) => user.email === userData.email
-            );
-
-            if (!existingUser) {
-                return {
-                    success: false,
-                    message: "No account found with this email."
-                };
-            }
-
-            setUser(existingUser);
-            saveToStorage("echo-user", existingUser);
+            setUser(response.data);
 
             return {
                 success: true
@@ -57,20 +55,23 @@ export function AuthProvider({ children }) {
             message:
                 error.response?.data?.message ||
                 "Failed to sign in. Please try again."
-        };
+            };
         }
     };
 
     const register = async (userData) => {
         try {
-            const newUser = createUser(userData);
+            const response = await registerUser(
+                {
+                    name: userData.name || userData.username,
+                    username: userData.username,
+                    email: userData.email,
+                    password: userData.password
 
-            const response = await createUserRequest(newUser);
-            const createdUser = response.data;
+                }
+            );
 
-            setUser(createdUser);
-
-            saveToStorage("echo-user", createdUser);
+            setUser(response.data);
 
             return {
                 success: true
@@ -88,25 +89,19 @@ export function AuthProvider({ children }) {
     };
 
     const updateProfile = async (profileData) => {
-
         if (!user) {
             return;
         }
 
         try {
-            const response = await updateUser(
-                user.id, 
-                {
-                    ...user,
-                    ...profileData
-                }
-            );
+            const response = await updateUser({
+                ...user,
+                ...profileData  
+            });
 
             const updatedUser = response.data;
 
             setUser(updatedUser);
-
-            saveToStorage("echo-user", updatedUser);
 
             return true;
         } catch (error) {
@@ -139,19 +134,21 @@ export function AuthProvider({ children }) {
         });
     };
 
-    const logout = () => {
-
-        setUser(null);
-
-        // Only remove the active session.
-        // The actual user account remains stored.
-        removeFromStorage("echo-user");
+    const logout = async () => {
+        try{
+            await logoutUser();
+        } catch (error) {
+            console.error("Failed to logout:", error);
+        } finally {
+            setUser(null);
+        }
     };
 
     return (
         <AuthContext.Provider
             value={{
                 user, 
+                isLoading,
                 login,
                 register, 
                 updateProfile,
