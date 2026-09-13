@@ -1,6 +1,7 @@
 import {
     registerUser,
     findUserByEmail,
+    getUserById,
     verifyPassword,
     generateToken
 } from "../services/authService.js";
@@ -104,4 +105,37 @@ export async function login(req, res, next) {
     } catch (error) {
         next(error);
     }
+}
+
+export async function getCurrentUser(req, res, next) {
+    try {
+        const user = await getUserById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export function logout(req, res) {
+    res.clearCookie("token", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production"
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Logged out successfully."
+    });
 }

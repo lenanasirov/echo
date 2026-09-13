@@ -59,6 +59,25 @@ export async function findUserByEmail(email) {
     return rows[0] || null;
 }
 
+export async function getUserById(userId) {
+    const [rows] = await pool.query(`
+        SELECT
+            id,
+            name,
+            username,
+            email,
+            avatar,
+            bio,
+            streak,
+            last_streak_cycle_id,
+            created_at
+        FROM users
+        WHERE id = ?
+    `, [userId]);
+
+    return rows[0] || null;
+}
+
 export async function verifyPassword(password, passwordHash) {
     return bcrypt.compare(password, passwordHash);
 }
