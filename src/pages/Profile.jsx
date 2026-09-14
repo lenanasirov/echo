@@ -1,17 +1,29 @@
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { FiEdit2 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 import MemoryGrid from "../components/memory/MemoryGrid";
 import { useAuth } from "../hooks/useAuth";
 import { isMemoryOwner } from "../utils/memoryUtils";
+import { fetchMemories } from "../store/slices/memoriesSlice";
 
 
 function Profile() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const { memories } = useSelector((state) => state.memories);
+  const { memories, status} = useSelector(
+    (state) => state.memories
+  );
+
   const { user } = useAuth();
+
+    useEffect(() => {
+        if (status === "idle") {
+            dispatch(fetchMemories());
+        }
+    }, [status, dispatch]);
 
   // The profile should only display the current user's memories
   const userMemories = memories.filter(
