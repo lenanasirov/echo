@@ -2,7 +2,9 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 import { 
     getMemories,
-    createMemory as createMemoryRequest
+    createMemory as createMemoryRequest,
+    likeMemory as likeMemoryRequest,
+    unlikeMemory as unlikeMemoryRequest
 } from "../../services/memoryService";
 
 
@@ -46,6 +48,40 @@ export const createMemory = createAsyncThunk(
     }
 );
 
+export const likeMemory = createAsyncThunk(
+    "memories/likeMemory",
+    async (memoryId, { rejectWithValue }) => {
+        try {
+            await likeMemoryRequest(memoryId);
+
+            return memoryId;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to like memory"
+            );
+        }
+    }
+);
+
+export const unlikeMemory = createAsyncThunk(
+    "memories/unlikeMemory",
+    async (memoryId, { rejectWithValue }) => {
+        try {            
+            await unlikeMemoryRequest(memoryId);   
+
+            return memoryId;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to unlike memory"
+            );
+        }
+    }
+);
+
 
 const memoriesSlice = createSlice({
     name: "memories",
@@ -77,32 +113,6 @@ const memoriesSlice = createSlice({
 
             if (index !== -1) {
                 state.memories.splice(index, 1);
-            }
-        },
-
-        toggleLike: (state, action) => {
-            const {memoryId, userId} = action.payload;
-
-            const memory = state.memories.find(
-                (memory) => memory.id === memoryId
-            );
-
-            if (!memory) {
-                return;
-            }
-
-            if (!memory.likedBy) {
-                memory.likedBy = [];
-            }
-
-            const userIndex = memory.likedBy.indexOf(userId);
-
-            if (userIndex === -1) {
-                memory.likedBy.push(userId);
-                memory.likes++;
-            } else {
-                memory.likedBy.splice(userIndex, 1);
-                memory.likes--;
             }
         },
 
@@ -199,6 +209,33 @@ const memoriesSlice = createSlice({
             .addCase(createMemory.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
+            })
+            
+            .addCase(likeMemory.fulfilled, (state, action) => {
+                const memory = state.memories.find(
+                    (memory) => memory.id === action.payload
+                );
+
+                if (!memory) {
+                    return;
+                }
+
+                memory.likes += 1;
+                memory.likedByCurrentUser = true;
+                
+            })
+
+            .addCase(unlikeMemory.fulfilled, (state, action) => {
+                const memory = state.memories.find(
+                    (memory) => memory.id === action.payload
+                );
+
+                if (!memory) {
+                    return;
+                }
+
+                memory.likes -= 1;
+                memory.likedByCurrentUser = false;
             });
     }
 });
@@ -207,7 +244,6 @@ export const {
     addMemory, 
     updateMemory, 
     deleteMemory, 
-    toggleLike, 
     addComment, 
     updateComment, 
     deleteComment

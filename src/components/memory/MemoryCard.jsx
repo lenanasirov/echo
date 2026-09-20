@@ -11,7 +11,12 @@ import {
 import formatRelativeTime from "../../utils/formatRelativeTime";
 
 import { useAuth } from "../../hooks/useAuth";
-import { toggleLike } from "../../store/slices/memoriesSlice";
+
+import { 
+    likeMemory, 
+    unlikeMemory 
+} from "../../store/slices/memoriesSlice";
+
 import useImage from "../../hooks/useImage";
 
 function MemoryCard({ memory, isLocked = false }) {
@@ -36,10 +41,11 @@ function MemoryCard({ memory, isLocked = false }) {
             return;
         }
         
-        dispatch(toggleLike({
-            memoryId: memory.id,
-            userId: user.id
-        }));
+        if(memory.likedByCurrentUser) {
+            dispatch(unlikeMemory(memory.id));
+        } else {
+            dispatch(likeMemory(memory.id));
+        }
     };
     return(
         <motion.article
@@ -400,7 +406,7 @@ function MemoryCard({ memory, isLocked = false }) {
                                 type="button"
                                 onClick={handleLike}
                                 aria-label={
-                                    memory.likedBy?.includes(user?.id)
+                                    memory.likedByCurrentUser
                                         ? "Unlike memory"
                                         : "Like memory"
                                 }
@@ -429,7 +435,7 @@ function MemoryCard({ memory, isLocked = false }) {
                                         duration-200
                                         group-hover:scale-110
                                         ${
-                                            memory.likedBy?.includes(user?.id)
+                                            memory.likedByCurrentUser
                                                 ? "fill-pink-500 text-pink-500"
                                                 : ""
                                         }

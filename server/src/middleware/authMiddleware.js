@@ -25,3 +25,23 @@ export function authenticate(req, res, next) {
         });
     }
 }
+
+export function optioanlAuthenticate(req, res, next) {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return next();
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        req.user = {
+            id: decoded.userId
+        };
+    } catch {
+        // Invalid/expired token is treated as unauthenticated
+    }
+
+    next();
+}

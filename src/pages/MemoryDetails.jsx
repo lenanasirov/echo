@@ -7,9 +7,13 @@ import { motion } from "framer-motion";
 
 import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
-import { deleteMemory } from "../store/slices/memoriesSlice";
+import { 
+    deleteMemory, 
+    fetchMemories,
+    likeMemory, 
+    unlikeMemory 
+} from "../store/slices/memoriesSlice";
 import { deleteImage } from "../utils/imageStorage";
-import { toggleLike } from "../store/slices/memoriesSlice";
 import { canViewMemory, canEditMemory } from "../utils/memoryAccess";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
@@ -28,7 +32,11 @@ import {
 
 function MemoryDetails() {
     const { user } = useAuth();
-    const { memories } = useSelector((state) => state.memories);
+
+    const { memories, status } = useSelector(
+        (state) => state.memories
+    );
+
     const { cycle } = useSelector((state) => state.echoCycle);
     
     const navigate = useNavigate();
@@ -38,6 +46,12 @@ function MemoryDetails() {
 
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        if (status === "idle") {
+            dispatch(fetchMemories());
+        }
+    }, [status, dispatch]);
 
     // find the memory with the given id
     const memory = memories.find(
@@ -58,7 +72,7 @@ function MemoryDetails() {
     const { imageUrl, isLoading } = useImage(memory?.image);
 
     // check if the user has liked this memory  
-    const liked = memory?.likedBy?.includes(user?.id);
+    const liked = memory?.likedByCurrentUser;
 
     const scrollToComments = () => {
         const commentInput = document.getElementById("comment-input");
@@ -93,10 +107,11 @@ function MemoryDetails() {
             return;
         }
 
-        dispatch(toggleLike({
-            memoryId: memory.id,
-            userId: user.id
-        }));
+        if(memory.likedByCurrentUser) {
+            dispatch(unlikeMemory(memory.id));
+        } else {
+            dispatch(likeMemory(memory.id));
+        }   
     };
 
 
@@ -126,6 +141,23 @@ function MemoryDetails() {
         }
     };
 
+    if (status === "loading") {
+        return (
+            <div
+                className="
+                    mx-auto
+                    max-w-4xl
+                    px-6
+                    py-16
+                    text-center
+                    text-zinc-400
+                "
+            >
+                Loading memory...
+            </div>
+        );
+    }
+    
     if(!memory){
         return(
             <div

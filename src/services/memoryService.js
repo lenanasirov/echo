@@ -37,8 +37,8 @@ function mapMemoryFromApi(memory) {
 
         createdAt: memory.created_at,
 
-        likes: 0,
-        likedBy: [],
+        likes: memory.like_count,
+        likedByCurrentUser: Boolean(memory.liked_by_current_user),
         comments: []
     };
 }
@@ -51,6 +51,14 @@ export async function getMemories() {
 
         data: response.data.data.map(mapMemoryFromApi)
     };
+}
+
+export async function likeMemory(memoryId) {
+    return api.post(`/memories/${memoryId}/like`);
+}
+
+export async function unlikeMemory(memoryId) {
+    return api.delete(`/memories/${memoryId}/like`);
 }
 
 export async function createMemory(memoryData) {
@@ -84,4 +92,5 @@ export async function createMemory(memoryData) {
         data: mappedMemory
     };
 }
+
 
