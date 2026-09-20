@@ -5,8 +5,11 @@ A music-focused social diary where users capture the soundtrack of their moments
 Echo allows users to share authentic experiences through:
 
 🎵 A song
+
 😊 A mood
+
 📸 A photo
+
 💭 A personal thought
 
 Instead of creating a curated online identity, Echo focuses on capturing real moments and the emotions connected to them.
@@ -62,17 +65,19 @@ The design direction:
 * Tailwind CSS
 * Framer Motion
 * React Icons
+* Axios
 
 ## Backend
 
 * Node.js
 * Express.js
 * MySQL
-* Axios
+* JWT
+* bcryptjs
 
-## Local Storage
+## Browser Storage
 
-* localStorage — temporary frontend session/UI state
+* localStorage — frontend-only UI and notification/reminder state
 * IndexedDB — locally stored uploaded image files
 
 ## Planned External Services
@@ -88,33 +93,38 @@ These external services are not currently integrated. Images currently remain in
 
 Echo follows a client-server architecture where the backend and MySQL database are the source of truth for persistent application data.
 
+Authentication is handled by the backend using JWTs stored in an HttpOnly cookie.
+
 ```text
-                    ┌──────────────┐
-                    │    MySQL     │
-                    │   Database   │
-                    └──────▲───────┘
-                           │
-                       Services
-                           │
-                       Controllers
-                           │
-                         Routes
-                           │
-                    ┌──────▼───────┐
-                    │ Express API  │
-                    └──────▲───────┘
-                           │
-                         Axios
-                           │
-                    ┌──────▼───────┐
-                    │    Redux     │
-                    │    Toolkit   │
-                    └──────▲───────┘
-                           │
-                    ┌──────▼───────┐
-                    │    React     │
-                    │      UI      │
-                    └──────────────┘
+                         ┌──────────────┐
+                         │    MySQL     │
+                         │   Database   │
+                         └──────▲───────┘
+                                │
+                            Services
+                                │
+                           Controllers
+                                │
+                              Routes
+                                │
+                         ┌──────▼───────┐
+                         │ Express API  │
+                         └──────▲───────┘
+                                │
+                         JWT + HttpOnly
+                              Cookie
+                                │
+                              Axios
+                                │
+                         ┌──────▼───────┐
+                         │    Redux     │
+                         │    Toolkit   │
+                         └──────▲───────┘
+                                │
+                         ┌──────▼───────┐
+                         │    React     │
+                         │      UI      │
+                         └──────────────┘
 ```
 
 ### Data Flow
@@ -131,11 +141,33 @@ Redux acts as the main frontend application state, while MySQL provides persiste
 
 The frontend uses a centralized API/service layer rather than communicating with the backend directly from UI components.
 
+Authentication follows a separate request flow:
+
+```text
+React
+  ↓
+Axios
+  ↓
+Express API
+  ↓
+HttpOnly JWT Cookie
+  ↓
+Authentication Middleware
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+```
+
+The browser automatically sends the authentication cookie with API requests. The frontend does not directly access or store the JWT.
+
 ---
 
 # 💾 Persistence Architecture
 
-Echo currently uses different storage mechanisms for different types of data.
+Echo uses different storage mechanisms for different types of data.
 
 ## Backend / MySQL
 
@@ -143,10 +175,13 @@ Persistent application data is stored in MySQL:
 
 * Users
 * User profile information
+* Password hashes
 * Echo streak data
 * Echo cycles
 * Memories
 * Memory metadata
+* Likes
+* Comments
 
 The backend is the source of truth for this data.
 
@@ -162,17 +197,28 @@ Express
 MySQL
 ```
 
+## Authentication Session
+
+Authentication sessions are maintained using a JWT stored in an **HttpOnly `token` cookie**.
+
+The JWT contains the authenticated user's ID and is signed using the server's `JWT_SECRET`.
+
+The browser automatically sends the cookie with requests to the API, while frontend JavaScript cannot directly access the JWT.
+
+This avoids storing authentication tokens in localStorage.
+
+The authentication cookie is configured with:
+
+* `HttpOnly`
+* `SameSite=Lax`
+* `Secure` in production
+* A 7-day cookie lifetime
+
+The JWT expiration itself is configured through `JWT_EXPIRES_IN`.
+
 ## localStorage
 
-localStorage is currently used only for frontend-specific or temporary state.
-
-### `echo-user`
-
-Stores the currently active mock-authenticated user locally.
-
-This is temporary compatibility state used while real authentication has not yet been implemented.
-
-The actual user record and profile data are stored in MySQL.
+localStorage is currently used only for frontend-specific state.
 
 ### `echo-cycle-ui`
 
@@ -187,11 +233,13 @@ The actual Echo cycle itself is stored in MySQL.
 
 ```text
 localStorage
-├── echo-user       → temporary mock session state
-└── echo-cycle-ui   → frontend notification/reminder state
+└── echo-cycle-ui
+    └── frontend notification/reminder state
 ```
 
-The previous persistent keys `echo-users`, `echo-memories`, and `echo-cycle` are no longer used.
+The previous persistent keys `echo-user`, `echo-users`, `echo-memories`, and `echo-cycle` are no longer used as the source of application persistence.
+
+User authentication is now handled by the backend JWT authentication system rather than a locally stored mock user.
 
 ## IndexedDB
 
@@ -212,6 +260,270 @@ Cloudinary-based image storage is planned for a future iteration.
 
 ---
 
+# 🔐 Authentication
+
+Echo uses **JWT-based authentication** with an HttpOnly cookie.
+
+The authentication system provides:
+
+* User registration
+* User login
+* Session restoration
+* Protected API routes
+* Logout
+* Password hashing
+* Duplicate account protection
+* Invalid and expired token handling
+
+## Authentication Architecture
+
+The authentication flow is handled by dedicated backend routes, controllers, services, and middleware.
+
+```text
+Auth Route
+    ↓
+Auth Controller
+    ↓
+Auth Service
+    ↓
+MySQL
+```
+
+Protected routes additionally use:
+
+```text
+Request
+  ↓
+authMiddleware
+  ↓
+JWT verification
+  ↓
+req.user
+  ↓
+Controller
+```
+
+### JWT
+
+After successful registration or login, the backend generates a JWT containing the user's ID:
+
+```json
+{
+  "userId": 123
+}
+```
+
+The token is signed using:
+
+```env
+JWT_SECRET=your-development-secret
+```
+
+and its expiration is controlled by:
+
+```env
+JWT_EXPIRES_IN=7d
+```
+
+The JWT is stored in an HttpOnly cookie named:
+
+```text
+token
+```
+
+Because the cookie is HttpOnly, client-side JavaScript cannot read the JWT directly.
+
+---
+
+## Registration Flow
+
+Registration follows these steps:
+
+```text
+User submits registration form
+          ↓
+POST /api/auth/register
+          ↓
+Validate required fields
+          ↓
+Hash password with bcrypt
+          ↓
+Create user in MySQL
+          ↓
+Generate JWT
+          ↓
+Set HttpOnly authentication cookie
+          ↓
+Return user data
+```
+
+Passwords are never stored in plain text.
+
+The backend hashes passwords using `bcryptjs` with 12 salt rounds before storing them in the `password_hash` column.
+
+A successful registration automatically authenticates the new user.
+
+---
+
+## Login Flow
+
+Login follows these steps:
+
+```text
+User submits email + password
+          ↓
+POST /api/auth/login
+          ↓
+Find user by email
+          ↓
+Compare password with password_hash
+          ↓
+Generate JWT
+          ↓
+Set HttpOnly authentication cookie
+          ↓
+Return safe user data
+```
+
+The `password_hash` is never returned to the frontend.
+
+Invalid email/password combinations return:
+
+```text
+401 Unauthorized
+```
+
+without revealing whether the email or password was incorrect.
+
+---
+
+## Session Restoration
+
+When the application starts, the frontend checks whether an authenticated session already exists.
+
+```text
+Application starts
+       ↓
+GET /api/auth/me
+       ↓
+JWT authentication middleware
+       ↓
+Verify token
+       ↓
+Retrieve user from MySQL
+       ↓
+Restore authenticated frontend state
+```
+
+This allows users to remain authenticated across page refreshes without storing the JWT in browser-accessible storage.
+
+---
+
+## Protected Routes
+
+The `authenticate` middleware protects routes that require an authenticated user.
+
+Currently protected routes include:
+
+```text
+GET   /api/auth/me
+PATCH /api/users/me
+```
+
+The middleware:
+
+1. Reads the `token` cookie.
+2. Rejects the request if no token exists.
+3. Verifies the JWT using `JWT_SECRET`.
+4. Extracts the user's ID.
+5. Attaches the authenticated user ID to `req.user`.
+6. Allows the request to continue.
+
+Missing authentication returns:
+
+```text
+401 Unauthorized
+```
+
+Invalid or expired tokens also return:
+
+```text
+401 Unauthorized
+```
+
+---
+
+## Logout Flow
+
+Logout clears the authentication cookie:
+
+```text
+POST /api/auth/logout
+        ↓
+Clear token cookie
+        ↓
+Return successful logout response
+```
+
+No authentication token is stored in localStorage or managed by the frontend.
+
+---
+
+## Authentication Environment Variables
+
+The backend requires the following authentication-related environment variables:
+
+```env
+JWT_SECRET=your-development-secret
+JWT_EXPIRES_IN=7d
+```
+
+### `JWT_SECRET`
+
+Secret key used to sign and verify JWTs.
+
+For production, this must be replaced with a strong, private secret and must not be committed to version control.
+
+### `JWT_EXPIRES_IN`
+
+Controls the lifetime of generated JWTs.
+
+Example:
+
+```env
+JWT_EXPIRES_IN=7d
+```
+
+The authentication cookie is currently configured with a 7-day lifetime.
+
+---
+
+## Removal of Mock Authentication
+
+Earlier versions of Echo used localStorage-based mock authentication.
+
+That implementation has been removed.
+
+Authentication is now handled by:
+
+```text
+React
+  ↓
+Axios
+  ↓
+Express
+  ↓
+JWT + HttpOnly Cookie
+  ↓
+Authentication Middleware
+  ↓
+MySQL
+```
+
+This provides a real backend authentication foundation rather than relying on browser-local mock session data.
+
+---
+
 # 🏗 Backend Architecture
 
 The Echo backend is located in the `server/` directory and is built with Node.js and Express.js.
@@ -225,6 +537,7 @@ server/
 │   │   └── env.js
 │   │
 │   ├── controllers/
+│   │   ├── authController.js
 │   │   ├── userController.js
 │   │   ├── memoryController.js
 │   │   └── echoCycleController.js
@@ -234,14 +547,17 @@ server/
 │   │   └── schema.sql
 │   │
 │   ├── middleware/
+│   │   ├── authMiddleware.js
 │   │   └── errorHandler.js
 │   │
 │   ├── routes/
+│   │   ├── authRoutes.js
 │   │   ├── userRoutes.js
 │   │   ├── memoryRoutes.js
 │   │   └── echoCycleRoutes.js
 │   │
 │   ├── services/
+│   │   ├── authService.js
 │   │   ├── userService.js
 │   │   ├── memoryService.js
 │   │   └── echoCycleService.js
@@ -262,7 +578,7 @@ server/
 * **`controllers/`** — Handles HTTP requests, responses, and error forwarding.
 * **`services/`** — Contains application logic and database operations.
 * **`db/`** — Handles the MySQL connection and database schema.
-* **`middleware/`** — Contains shared Express middleware, including centralized error handling.
+* **`middleware/`** — Contains shared Express middleware, including authentication and centralized error handling.
 * **`app.js`** — Initializes Express, registers middleware and API routes, and starts the server.
 
 ### Request Flow
@@ -285,13 +601,44 @@ memoryService.js
 MySQL
 ```
 
+For protected requests:
+
+```text
+PATCH /api/users/me
+        ↓
+userRoutes.js
+        ↓
+authMiddleware.js
+        ↓
+userController.js
+        ↓
+userService.js
+        ↓
+MySQL
+```
+
 The service layer keeps database operations separate from HTTP request handling, making the backend easier to maintain and extend.
 
 ### Environment Configuration
 
-Environment-specific values such as database credentials and server configuration are stored in environment variables.
+Environment-specific values such as database credentials and authentication configuration are stored in environment variables.
 
 The `.env` file is excluded from version control, while `.env.example` documents the required environment variables without containing sensitive values.
+
+Example:
+
+```env
+PORT=5000
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=echo
+
+JWT_SECRET=your-development-secret
+JWT_EXPIRES_IN=7d
+```
 
 ---
 
@@ -305,7 +652,7 @@ The database schema is defined in `server/src/db/schema.sql`.
 
 ### `users`
 
-Stores user profile information and Echo streak data.
+Stores user account, profile, authentication, and Echo streak data.
 
 | Column                 | Description                                                   |
 | ---------------------- | ------------------------------------------------------------- |
@@ -313,6 +660,7 @@ Stores user profile information and Echo streak data.
 | `name`                 | User's display name                                           |
 | `username`             | Unique username                                               |
 | `email`                | Unique email address                                          |
+| `password_hash`        | Bcrypt password hash                                          |
 | `avatar`               | Optional avatar                                               |
 | `bio`                  | Optional user biography                                       |
 | `streak`               | Current consecutive Echo cycle streak                         |
@@ -320,6 +668,8 @@ Stores user profile information and Echo streak data.
 | `created_at`           | User creation timestamp                                       |
 
 Usernames and email addresses are unique and indexed for efficient lookups.
+
+Plain-text passwords are never stored in the database.
 
 ---
 
@@ -484,7 +834,7 @@ For endpoints returning multiple resources:
 
 ### Error Response
 
-Errors are forwarded to the centralized error-handling middleware and follow the API's error response structure:
+Errors follow the API's error response structure:
 
 ```json
 {
@@ -495,48 +845,130 @@ Errors are forwarded to the centralized error-handling middleware and follow the
 
 ---
 
-## Health Checks
+# 🔐 Authentication Endpoints
 
-### `GET /api/health`
+### `POST /api/auth/register`
 
-Checks whether the Echo API is running.
+Creates a new user account and automatically authenticates the new user.
+
+**Authentication:** Public
+
+**Required fields:**
+
+```json
+{
+  "name": "Lena",
+  "username": "lena",
+  "email": "lena@example.com",
+  "password": "password"
+}
+```
+
+On success, the backend creates the user, hashes the password, generates a JWT, and sets the authentication cookie.
+
+**Response — `201 Created`**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 123,
+    "name": "Lena",
+    "username": "lena",
+    "email": "lena@example.com"
+  }
+}
+```
+
+**Possible errors:**
+
+* `400 Bad Request` — Required fields are missing.
+* `409 Conflict` — Email or username already exists.
+
+---
+
+### `POST /api/auth/login`
+
+Authenticates an existing user.
+
+**Authentication:** Public
+
+**Request:**
+
+```json
+{
+  "email": "lena@example.com",
+  "password": "password"
+}
+```
+
+On successful authentication, the backend generates a JWT and sets the HttpOnly authentication cookie.
 
 **Response — `200 OK`**
 
 ```json
 {
   "success": true,
-  "message": "Echo API is running"
+  "data": {
+    "id": 123,
+    "name": "Lena",
+    "username": "lena",
+    "email": "lena@example.com"
+  }
 }
 ```
 
+The response does not expose `password_hash`.
+
+**Possible errors:**
+
+* `400 Bad Request` — Required fields are missing.
+* `401 Unauthorized` — Invalid email or password.
+
 ---
 
-### `GET /api/health/db`
+### `GET /api/auth/me`
 
-Checks whether the backend can establish a connection to the MySQL database.
+Returns the currently authenticated user.
+
+**Authentication:** Required
+
+The JWT is read automatically from the `token` HttpOnly cookie.
 
 **Response — `200 OK`**
 
 ```json
 {
   "success": true,
-  "message": "Database connection is working"
+  "data": {}
 }
 ```
 
-**Response — `500 Internal Server Error`**
+**Possible errors:**
+
+* `401 Unauthorized` — Missing, invalid, or expired authentication token.
+* `404 Not Found` — Authenticated user no longer exists.
+
+---
+
+### `POST /api/auth/logout`
+
+Logs out the current browser session by clearing the authentication cookie.
+
+**Authentication:** Not required
+
+**Response — `200 OK`**
 
 ```json
 {
-  "success": false,
-  "message": "Database connection failed"
+  "success": true,
+  "message": "Logged out successfully."
 }
 ```
 
 ---
 
-# 👤 Users
+# ❤️ Users
 
 ### `GET /api/users`
 
@@ -544,9 +976,13 @@ Retrieves all users.
 
 Users are returned in descending order by `created_at`.
 
+**Authentication:** Public
+
 ### `POST /api/users`
 
-Creates a new user.
+Creates a user record.
+
+**Authentication:** Public
 
 The database initializes:
 
@@ -554,9 +990,15 @@ The database initializes:
 * `last_streak_cycle_id` to `NULL`
 * `created_at` automatically
 
-### `PATCH /api/users/:id`
+> Normal application registration should use `/api/auth/register`, which also handles password hashing and authentication.
 
-Updates an existing user's profile and persistent streak data.
+### `PATCH /api/users/me`
+
+Updates the currently authenticated user's profile and persistent streak data.
+
+**Authentication:** Required
+
+The authenticated user is identified from the JWT rather than from a user ID supplied by the client.
 
 ---
 
@@ -602,6 +1044,9 @@ The service converts supplied timestamps into MySQL-compatible timestamp values 
 | --------------------------- | -------------------------------------------- |
 | `200 OK`                    | Successful request                           |
 | `201 Created`               | Resource successfully created                |
+| `400 Bad Request`           | Missing or invalid required request data     |
+| `401 Unauthorized`          | Authentication is missing or invalid         |
+| `404 Not Found`             | Requested resource does not exist            |
 | `409 Conflict`              | Resource conflicts with existing unique data |
 | `500 Internal Server Error` | Server or database error                     |
 
@@ -617,7 +1062,10 @@ The API is designed to maintain consistent response and error formats as additio
 * [x] Initial design system
 * [x] Landing page
 * [x] Feed
-* [x] User registration and login flow
+* [x] User registration and login
+* [x] JWT-based authentication
+* [x] Protected API routes
+* [x] Persistent user sessions
 * [x] User profiles
 * [x] Create memories
 * [x] Song selection
@@ -636,9 +1084,7 @@ The API is designed to maintain consistent response and error formats as additio
 * [x] Feed memory interactions
 * [ ] Comments and reactions
 * [ ] Friends
-* [ ] Full social authentication
-
-The current authentication flow is intentionally a temporary mock-authentication implementation and does not provide production authentication or authorization.
+* [ ] Social/OAuth authentication
 
 ---
 
@@ -646,7 +1092,6 @@ The current authentication flow is intentionally a temporary mock-authentication
 
 * [ ] Spotify API integration
 * [ ] Cloud-based image storage
-* [ ] Real user authentication
 * [ ] Advanced friend interactions
 * [ ] Personal music statistics
 * [ ] Yearly "Sound Journey" recap
@@ -658,12 +1103,13 @@ The current authentication flow is intentionally a temporary mock-authentication
 
 The main experience:
 
-1. Capture a moment
-2. Choose the song that represents it
-3. Select your current mood
-4. Add a photo and personal thought
-5. Share the moment with friends
-6. Revisit memories through your personal soundtrack
+1. Create an account or sign in
+2. Capture a moment
+3. Choose the song that represents it
+4. Select your current mood
+5. Add a photo and personal thought
+6. Share the moment with friends
+7. Revisit memories through your personal soundtrack
 
 ---
 
@@ -695,13 +1141,26 @@ Express
 MySQL
 ```
 
+Authentication sessions are handled separately through a backend-generated JWT stored in an HttpOnly cookie.
+
+```text
+React
+  ↓
+Axios
+  ↓
+Express API
+  ↓
+JWT + HttpOnly Cookie
+```
+
 Browser-specific storage is intentionally limited to:
 
-* Temporary mock authentication session state
-* Frontend notification/reminder state
+* Frontend Echo cycle notification/reminder state
 * Locally stored image files
 
-Real authentication, cloud image storage, Spotify integration, and additional social functionality remain planned for future iterations.
+Real backend authentication has been implemented, including registration, login, session restoration, protected routes, password hashing, JWT validation, and logout.
+
+Cloud image storage, Spotify integration, additional social functionality, and the mobile application remain planned for future iterations.
 
 ---
 
