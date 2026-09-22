@@ -428,6 +428,13 @@ Currently protected routes include:
 ```text
 GET   /api/auth/me
 PATCH /api/users/me
+
+POST   /api/memories/:memoryId/like
+DELETE /api/memories/:memoryId/like
+
+POST   /api/memories/:memoryId/comments
+PATCH  /api/memories/:memoryId/comments/:commentId
+DELETE /api/memories/:memoryId/comments/:commentId
 ```
 
 The middleware:
@@ -737,6 +744,8 @@ Stores comments made on memories.
 | `content`    | Comment text                 |
 | `created_at` | Comment creation timestamp   |
 
+Comments are associated with both the memory and the authenticated user who created them.
+
 ---
 
 ## Relationships
@@ -968,7 +977,7 @@ Logs out the current browser session by clearing the authentication cookie.
 
 ---
 
-# ❤️ Users
+# 👤 Users
 
 ### `GET /api/users`
 
@@ -1008,15 +1017,227 @@ The authenticated user is identified from the JWT rather than from a user ID sup
 
 Retrieves all memories.
 
+**Authentication:** Optional
+
 Memories are returned in descending order by `created_at`.
 
-Each memory includes the associated user's basic information through a database join.
+Each memory includes:
+
+* Associated user's basic information
+* Like count
+* Comment count
+* Whether the currently authenticated user has liked the memory
+
+The `liked_by_current_user` field is calculated using the authenticated user when available. Public requests receive `false` for this user-specific field.
+
+Example interaction data:
+
+```json
+{
+  "like_count": 12,
+  "comment_count": 4,
+  "liked_by_current_user": true
+}
+```
 
 ### `POST /api/memories`
 
 Creates a new memory.
 
-After creation, the API retrieves the newly created memory together with its associated user information and returns it using the same database response structure as `GET /api/memories`.
+**Authentication:** Required
+
+The authenticated user's ID is used as the memory owner.
+
+After creation, the API retrieves the newly created memory together with its associated user information and interaction data.
+
+---
+
+# ❤️ Memory Likes
+
+Likes are persistent backend interactions associated with both a memory and an authenticated user.
+
+### `POST /api/memories/:memoryId/like`
+
+Likes a memory for the currently authenticated user.
+
+**Authentication:** Required
+
+The backend uses the authenticated user's ID from the JWT rather than accepting a user ID from the client.
+
+**Response — `201 Created`**
+
+```json
+{
+  "success": true,
+  "message": "Memory liked successfully."
+}
+```
+
+A user can only like a memory once.
+
+Attempting to like the same memory again returns:
+
+```text
+409 Conflict
+```
+
+```json
+{
+  "success": false,
+  "message": "Memory already liked."
+}
+```
+
+### `DELETE /api/memories/:memoryId/like`
+
+Removes the authenticated user's like from a memory.
+
+**Authentication:** Required
+
+The endpoint removes only the current user's like.
+
+If the user has not liked the memory:
+
+```text
+404 Not Found
+```
+
+```json
+{
+  "success": false,
+  "message": "Memory is not liked by this user."
+}
+```
+
+If the memory does not exist:
+
+```text
+404 Not Found
+```
+
+```json
+{
+  "success": false,
+  "message": "Memory not found."
+}
+```
+
+---
+
+# 💬 Memory Comments
+
+Comments are persistent interactions associated with a memory and the authenticated user who created them.
+
+### `GET /api/memories/:memoryId/comments`
+
+Retrieves all comments for a memory.
+
+**Authentication:** Public
+
+Comments are returned in chronological order and include the author's basic information.
+
+Example:
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "memory_id": 123,
+      "user_id": 456,
+      "user_name": "Lena",
+      "user_username": "lena",
+      "user_avatar": null,
+      "content": "This song fits the moment perfectly.",
+      "created_at": "2026-09-22T15:30:00.000Z"
+    }
+  ]
+}
+```
+
+If the memory does not exist:
+
+```text
+404 Not Found
+```
+
+### `POST /api/memories/:memoryId/comments`
+
+Creates a comment on a memory.
+
+**Authentication:** Required
+
+The authenticated user's ID is used automatically.
+
+**Request:**
+
+```json
+{
+  "content": "This song fits the moment perfectly."
+}
+```
+
+Leading and trailing whitespace is removed before storing the comment.
+
+Empty or whitespace-only comments return:
+
+```text
+400 Bad Request
+```
+
+```json
+{
+  "success": false,
+  "message": "Comment content is required."
+}
+```
+
+### `PATCH /api/memories/:memoryId/comments/:commentId`
+
+Updates an existing comment.
+
+**Authentication:** Required
+
+Users can only edit comments they created themselves.
+
+Attempting to modify another user's comment returns:
+
+```text
+403 Forbidden
+```
+
+```json
+{
+  "success": false,
+  "message": "You can only modify your own comments."
+}
+```
+
+Empty or whitespace-only content is rejected.
+
+### `DELETE /api/memories/:memoryId/comments/:commentId`
+
+Deletes an existing comment.
+
+**Authentication:** Required
+
+Users can only delete comments they created themselves.
+
+Attempting to delete another user's comment returns:
+
+```text
+403 Forbidden
+```
+
+```json
+{
+  "success": false,
+  "message": "You can only modify your own comments."
+}
+```
+
+The memory owner does not automatically receive permission to edit or delete comments created by other users.
 
 ---
 
@@ -1046,6 +1267,7 @@ The service converts supplied timestamps into MySQL-compatible timestamp values 
 | `201 Created`               | Resource successfully created                |
 | `400 Bad Request`           | Missing or invalid required request data     |
 | `401 Unauthorized`          | Authentication is missing or invalid         |
+| `403 Forbidden`             | Authenticated user does not have permission  |
 | `404 Not Found`             | Requested resource does not exist            |
 | `409 Conflict`              | Resource conflicts with existing unique data |
 | `500 Internal Server Error` | Server or database error                     |
@@ -1081,8 +1303,16 @@ The API is designed to maintain consistent response and error formats as additio
 
 ## Social Features
 
-* [x] Feed memory interactions
-* [ ] Comments and reactions
+* [x] Persistent memory likes
+* [x] Like and unlike interactions
+* [x] Current user's like state
+* [x] Persistent memory comments
+* [x] Comment creation
+* [x] Comment editing
+* [x] Comment deletion
+* [x] Comment ownership and authorization
+* [x] Like and comment counts
+* [x] Loading and error states for social interactions
 * [ ] Friends
 * [ ] Social/OAuth authentication
 
@@ -1108,8 +1338,9 @@ The main experience:
 3. Choose the song that represents it
 4. Select your current mood
 5. Add a photo and personal thought
-6. Share the moment with friends
-7. Revisit memories through your personal soundtrack
+6. Share the moment through the Echo feed
+7. Interact with other memories through likes and comments
+8. Revisit memories through your personal soundtrack
 
 ---
 
@@ -1153,12 +1384,27 @@ Express API
 JWT + HttpOnly Cookie
 ```
 
+Persistent backend functionality currently includes:
+
+* User accounts and profiles
+* JWT-based authentication
+* Echo cycles
+* Memories
+* Echo streaks
+* Memory likes
+* Memory comments
+* Comment ownership and authorization
+
 Browser-specific storage is intentionally limited to:
 
 * Frontend Echo cycle notification/reminder state
 * Locally stored image files
 
 Real backend authentication has been implemented, including registration, login, session restoration, protected routes, password hashing, JWT validation, and logout.
+
+Persistent social interactions have also been implemented, including likes, unlike functionality, comments, comment editing and deletion, ownership enforcement, interaction counts, current-user like state, and loading/error handling.
+
+Social interaction data persists in MySQL and remains available across page refreshes and new authenticated sessions.
 
 Cloud image storage, Spotify integration, additional social functionality, and the mobile application remain planned for future iterations.
 
