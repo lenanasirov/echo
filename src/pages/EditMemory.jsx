@@ -1,7 +1,8 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useEffect } from "react";
 
-import { updateMemory } from "../store/slices/memoriesSlice";
+import { updateMemory, fetchMemories } from "../store/slices/memoriesSlice";
 import { saveImage } from "../utils/imageStorage";
 import { canEditMemory } from "../utils/memoryAccess";
 import { isMemoryOwner } from "../utils/memoryUtils";
@@ -17,13 +18,19 @@ function EditMemory(){
     const dispatch = useDispatch();
     const navigate= useNavigate();
 
-    const { memories } = useSelector(
+    const { memories, status } = useSelector(
         (state) => state.memories
     );
 
     const { cycle } = useSelector(
         (state) => state.echoCycle
     );
+
+    useEffect(() => {
+        if (status === "idle") {
+            dispatch(fetchMemories());
+        }
+    }, [status, dispatch]);
 
     const memory = memories.find(
         (memory) => memory.id === Number(id)
@@ -34,7 +41,15 @@ function EditMemory(){
 
     const { imageUrl, isLoading} = useImage(memory?.image);
 
-    if (!memory){
+    if (status === "loading") {
+        return (
+            <div className="px-8 py-12 text-center text-zinc-400">
+                Loading memory...
+            </div>
+        );
+    }
+
+    if (status === "success" && !memory){
         return(
             <div 
                 className="
@@ -66,7 +81,7 @@ function EditMemory(){
         );
     }
 
-    if (!isOwner) {
+    if (status === "success" && !isOwner) {
         return (
             <div
                 className="
@@ -137,7 +152,13 @@ function EditMemory(){
     }
 
 
-    const handleEdit = async ({imageFile, selectedMood, caption, selectedSong, existingImage}) => {
+    const handleEdit = async ({
+        imageFile, 
+        selectedMood, 
+        caption, 
+        selectedSong, 
+        existingImage
+    }) => {
         let image = existingImage;
 
         if (imageFile) {
@@ -157,9 +178,18 @@ function EditMemory(){
             song: selectedSong
         };
 
-        dispatch(updateMemory(updatedMemory));
+        try{
+            await dispatch(
+                updateMemory({
+                    memoryId: memory.id,
+                    memoryData: updatedMemory
+                })
+            ).unwrap();
 
-        navigate(-1);
+            navigate(-1);
+        } catch (error) {
+            console.error("Failed to update memory:", error);
+        }
     };
 
     return(

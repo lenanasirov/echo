@@ -82,8 +82,6 @@ function CreateMemory() {
                 comments: []
             };
 
-            // dispatch(addMemory(newMemory));
-
             await dispatch(
                 createMemory(newMemory)
             ).unwrap();

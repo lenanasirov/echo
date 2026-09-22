@@ -3,6 +3,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { 
     getMemories,
     createMemory as createMemoryRequest,
+    updateMemory as updateMemoryRequest,
     likeMemory as likeMemoryRequest,
     unlikeMemory as unlikeMemoryRequest,
     getMemoryComments,
@@ -57,6 +58,25 @@ export const createMemory = createAsyncThunk(
                 error.response?.data?.message ||
                 error.message ||
                 "Failed to create memory"
+            );
+        }
+    }
+);
+
+export const updateMemory = createAsyncThunk(
+    "memories/updateMemory",
+    async ({ memoryId, memoryData }, { rejectWithValue }) => {
+        try {
+            const response = await updateMemoryRequest(
+                memoryId,
+                memoryData
+            );
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to update memory"
             );
         }
     }
@@ -256,23 +276,6 @@ const memoriesSlice = createSlice({
     initialState,
 
     reducers: {
-        addMemory: (state, action) => {
-            state.memories = [
-                action.payload,
-                ...state.memories
-            ];
-        },
-
-        updateMemory: (state, action) => {
-            const index = state.memories.findIndex(
-                (memory) => memory.id === action.payload.id
-            );
-
-            if (index !== -1) {
-                state.memories[index] = action.payload;
-            }
-        },
-
         deleteMemory: (state, action) => {
             const index = state.memories.findIndex(
                 (memory) => memory.id === action.payload.id
@@ -318,6 +321,42 @@ const memoriesSlice = createSlice({
             })
 
             .addCase(createMemory.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            .addCase(updateMemory.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+
+            .addCase(updateMemory.fulfilled, (state, action) => {
+                state.status = "success";
+                state.error = null;
+
+                const updatedMemory = action.payload;
+
+                const index = state.memories.findIndex(
+                    (memory) => memory.id === updatedMemory.id
+                );
+
+                if (index === -1) {
+                    return;
+                }
+
+                const existingMemory = state.memories[index];
+
+                state.memories[index] = {
+                    ...existingMemory,
+                    ...updatedMemory,
+                    likes: existingMemory.likes,
+                    likedByCurrentUser: existingMemory.likedByCurrentUser,
+                    commentCount: existingMemory.commentCount,
+                    comments: existingMemory.comments
+                };
+            })
+
+            .addCase(updateMemory.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
             })
@@ -534,8 +573,6 @@ export const selectDeleteCommentLoading = (state, memoryId, commentId) =>
     ] === "loading";
 
 export const {
-    addMemory, 
-    updateMemory, 
     deleteMemory
 } = memoriesSlice.actions;
 

@@ -1,7 +1,8 @@
 import { 
     getAllMemories, 
     createMemory, 
-    likeMemory, 
+    updateMemory,
+    likeMemory,
     unlikeMemory,
     getMemoryComments,
     createMemoryComment,
@@ -30,6 +31,38 @@ export async function postMemory(req, res, next) {
         });
 
         res.status(201).json({
+            success: true,
+            data: memory
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function patchMemory(req, res, next) {
+    try {
+        const { memoryId } = req.params;
+        const {
+            songId,
+            songTitle,
+            songArtist,
+            mood,
+            caption,
+            imageUrl
+        } = req.body;
+
+        const memory = await updateMemory({
+            memoryId,
+            userId: req.user.id,
+            songId,
+            songTitle,
+            songArtist,
+            mood,
+            caption,
+            imageUrl
+        });
+
+        res.status(200).json({
             success: true,
             data: memory
         });

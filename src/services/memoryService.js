@@ -177,4 +177,29 @@ export async function createMemory(memoryData) {
     };
 }
 
+export async function updateMemory(memoryId, memoryData) {
+    const payload = {
+        songId: memoryData.song?.id ?? null,
+        songTitle: memoryData.song?.title ?? null,
+        songArtist: memoryData.song?.artist ?? null,
+        mood: memoryData.mood ?? null,
+        caption: memoryData.caption ?? null,
+        imageUrl: memoryData.image
+            ? `indexeddb:${memoryData.image.id}`
+            : null
+    };
+
+    const response = await api.patch(
+        `/memories/${memoryId}`,
+        payload
+    );
+
+    const mappedMemory = mapMemoryFromApi(response.data.data);
+
+    return {
+        ...response,
+        data: mappedMemory
+    };
+}
+
 

@@ -28,20 +28,21 @@ function MemoryForm({
     const [selectedMood, setSelectedMood] = useState(initialMemory?.mood || "");
     const [caption, setCaption] = useState(initialMemory?.caption || "");
     const [imageFile, setImageFile] = useState(null);
-    const [imagePreview, setImagePreview] = useState(initialImagePreview);
+    const [localImagePreview, setLocalImagePreview] = useState(null);
     const [imageError, setImageError] = useState("");
     const [selectedSong, setSelectedSong] = useState(initialMemory?.song || null);
+
+    const imagePreview = localImagePreview || initialImagePreview;
 
     const canSave = (imageFile || initialImagePreview) && selectedMood && selectedSong;
 
     useEffect(() => {
         return () => {
-            if (imagePreview && imagePreview.startsWith("blob:")) {
-                URL.revokeObjectURL(imagePreview);
+            if (localImagePreview) {
+                URL.revokeObjectURL(localImagePreview);
             }
         };
-    }, [imagePreview]);
-
+    }, [localImagePreview]);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -70,7 +71,7 @@ function MemoryForm({
 
         const previewUrl = URL.createObjectURL(file);
 
-        setImagePreview(previewUrl);
+        setLocalImagePreview(previewUrl);
     };
 
     const handleSubmit = (event) => {
