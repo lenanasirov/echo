@@ -21,10 +21,12 @@ function Feed() {
     const { cycle } = useSelector((state) => state.echoCycle);
 
     useEffect(() => {
-        if (status === "idle") {
-            dispatch(fetchMemories());
+        if (!user?.id) {
+            return;
         }
-    }, [status, dispatch]);
+        dispatch(fetchMemories());
+
+    }, [user?.id, dispatch]);
 
     const currentCycleMemories = memories.filter(
         (memory) => memory.cycleId === cycle?.id

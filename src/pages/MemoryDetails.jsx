@@ -11,7 +11,8 @@ import {
     deleteMemory, 
     fetchMemories,
     likeMemory, 
-    unlikeMemory 
+    unlikeMemory,
+    selectLikeLoading
 } from "../store/slices/memoriesSlice";
 import { deleteImage } from "../utils/imageStorage";
 import { canViewMemory, canEditMemory } from "../utils/memoryAccess";
@@ -74,6 +75,10 @@ function MemoryDetails() {
     // check if the user has liked this memory  
     const liked = memory?.likedByCurrentUser;
 
+    const isLikeLoading = useSelector(
+        (state) => selectLikeLoading(state, memory?.id)
+    );
+
     const scrollToComments = () => {
         const commentInput = document.getElementById("comment-input");
     
@@ -103,7 +108,7 @@ function MemoryDetails() {
     }, [memory]);
 
     const handleLike = () => {
-        if (!user || !memory) {
+        if (!user || !memory || isLikeLoading) {
             return;
         }
 
@@ -658,6 +663,7 @@ function MemoryDetails() {
                 {/* Like */}
                 <button
                     type="button"
+                    disabled={isLikeLoading}
                     onClick={handleLike}
                     aria-label={liked ? "Unlike memory" : "Like memory"}
                     className="
@@ -678,15 +684,29 @@ function MemoryDetails() {
                         focus-visible:ring-purple-500/50
                     "
                 >
-                    <FiHeart 
-                        className={`
-                            text-lg
-                            transition
-                            duration-200
-                            group-hover:scale-110
-                            ${liked ? "fill-pink-500 text-pink-500" : ""}
-                        `}
-                    />
+                    {isLikeLoading ? (
+                        <span
+                            className="
+                                h-4
+                                w-4
+                                animate-spin
+                                rounded-full
+                                border-2
+                                border-white/20
+                                border-t-purple-400
+                            "
+                        />
+                    ) : (
+                        <FiHeart 
+                            className={`
+                                text-lg
+                                transition
+                                duration-200
+                                group-hover:scale-110
+                                ${liked ? "fill-pink-500 text-pink-500" : ""}
+                            `}
+                        />
+                    )}
 
                     <span>
                         {memory.likes}
@@ -697,7 +717,7 @@ function MemoryDetails() {
                 <button
                     type="button"
                     onClick={scrollToComments}
-                    aria-label={`View ${memory.comments?.length || 0} comments`}
+                    aria-label={`View ${memory.commentCount ?? 0} comments`}
                     className="
                         group
                         flex
@@ -726,7 +746,7 @@ function MemoryDetails() {
                     />
 
                     <span>
-                        {memory.comments?.length || 0}
+                        {memory.commentCount ?? 0}
                     </span>
                 </button>
 

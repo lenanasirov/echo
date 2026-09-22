@@ -26,7 +26,7 @@ export function authenticate(req, res, next) {
     }
 }
 
-export function optioanlAuthenticate(req, res, next) {
+export function optionalAuthenticate(req, res, next) {
     const token = req.cookies.token;
 
     if (!token) {

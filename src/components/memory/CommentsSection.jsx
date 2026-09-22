@@ -1,12 +1,20 @@
-import { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 
 import {
     FiEdit2,
     FiTrash2
 } from "react-icons/fi";
 
-import { addComment, updateComment, deleteComment } from "../../store/slices/memoriesSlice";
+import { 
+    fetchMemoryComments,
+    createMemoryComment,
+    editMemoryComment,
+    removeMemoryComment,
+    selectCommentsLoading,
+    selectCreateCommentLoading
+} from "../../store/slices/memoriesSlice";
+
 import { useAuth } from "../../hooks/useAuth";
 import formatRelativeTime from "../../utils/formatRelativeTime";
 
@@ -18,26 +26,45 @@ function CommentsSection({ memory }) {
     const [editingText, setEditingText] = useState("");
 
     const dispatch = useDispatch();
+
     const { user } = useAuth();
+
+    const isCommentsLoading = useSelector(
+        (state) => selectCommentsLoading(state, memory?.id)
+    );
+
+    const isCreatingComment = useSelector(
+        (state) => selectCreateCommentLoading(state, memory?.id)
+    );
+
+    const interactionStatus = useSelector(
+        (state) => state.memories.interactionStatus
+    );
+
+    useEffect(() => {
+        if (!memory?.id) {
+            return;
+        }
+
+        dispatch(fetchMemoryComments(memory.id));
+    }, [memory?.id, dispatch]);
 
     const comments = memory?.comments || [];
 
     const handleSubmit = () => {
-        if(!newComment.trim() || !user || !memory){
+        if (
+            !newComment.trim() || 
+            !user || 
+            !memory || 
+            isCreatingComment
+        ){
             return;
         }
 
         dispatch(
-            addComment({
+            createMemoryComment({
                 memoryId: memory.id,
-                comment: {
-                    id: Date.now(),
-                    userId: user.id,
-                    username: user.username,
-                    avatar: user.avatar,
-                    text: newComment.trim(),
-                    createdAt: new Date().toISOString()
-                }
+                content: newComment.trim()
             })
         );
 
@@ -46,7 +73,7 @@ function CommentsSection({ memory }) {
 
     const handleEditStart =(comment) => {
         setEditingCommentId(comment.id);
-        setEditingText(comment.text);
+        setEditingText(comment.content);
     };
     
     const handleEditCancel = () => {
@@ -54,26 +81,40 @@ function CommentsSection({ memory }) {
         setEditingText("");
     };
 
-    const handleEditSave = (commentId) => {
-        if(!editingText.trim()){
+    const handleEditSave = async (commentId) => {
+        const commentKey = `${memory.id}-${commentId}`;
+        const isSavingEdit = interactionStatus.comments.edit[commentKey] === "loading";
+
+        if(!editingText.trim() || isSavingEdit){
+            return;
+        }
+
+        try {
+            await dispatch(
+                editMemoryComment({
+                    memoryId: memory.id,
+                    commentId,
+                    content: editingText.trim()
+                })
+            ).unwrap();
+
+            setEditingCommentId(null);
+            setEditingText("");
+        } catch {
+            // Keep edit mode open so the user can retry.
+        }
+    };
+
+    const handleDelete = (commentId) => {
+        const commentKey = `${memory.id}-${commentId}`;
+        const isDeletingComment = interactionStatus.comments.delete[commentKey] === "loading";
+
+        if (isDeletingComment) {
             return;
         }
 
         dispatch(
-            updateComment({
-                memoryId: memory.id,
-                commentId,
-                text: editingText.trim()
-            })
-        );
-
-        setEditingCommentId(null);
-        setEditingText("");
-    };
-
-    const handleDelete = (commentId) => {
-        dispatch(
-            deleteComment({
+            removeMemoryComment({
                 memoryId: memory.id,
                 commentId
             })
@@ -100,7 +141,7 @@ function CommentsSection({ memory }) {
                 </h3>
 
                 <span className="text-sm text-zinc-500">
-                    {comments.length}
+                    {memory?.commentCount ?? 0}
                 </span>
 
             </div>
@@ -108,8 +149,11 @@ function CommentsSection({ memory }) {
             {/* Comments */}
             <div className="mt-6 space-y-5">
 
-                {comments.length === 0 ? (
-
+                {isCommentsLoading ? (
+                    <div className="py-8 text-center text-zinc-500">
+                        Loading comments...
+                    </div>
+                ): comments.length === 0 ? (
                     <div
                         className="
                             rounded-2xl
@@ -133,16 +177,20 @@ function CommentsSection({ memory }) {
                             Be the first to share your thoughts.
                         </p>
                     </div>
-
                 ) : (
-
                     comments.map((comment) => {
 
                         const isCommentOwner =
-                            comment.userId === user?.id;
+                            comment.user.id === user?.id;
 
                         const isEditing =
                             editingCommentId === comment.id;
+
+                        const commentKey = `${memory.id}-${comment.id}`;
+
+                        const isSavingEdit = interactionStatus.comments.edit[commentKey] === "loading";
+                        
+                        const isDeletingComment = interactionStatus.comments.delete[commentKey] === "loading";
 
                         return (
                             <div
@@ -171,7 +219,7 @@ function CommentsSection({ memory }) {
                                         shadow-md
                                     "
                                 >
-                                    {comment.avatar}
+                                    {comment.user.avatar}
                                 </div>
 
                                 {/* Comment content */}
@@ -193,6 +241,7 @@ function CommentsSection({ memory }) {
 
                                             <input
                                                 value={editingText}
+                                                disabled={isSavingEdit}
                                                 onChange={(event) =>
                                                     setEditingText(
                                                         event.target.value
@@ -244,13 +293,10 @@ function CommentsSection({ memory }) {
 
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        handleEditSave(
-                                                            comment.id
-                                                        )
-                                                    }
+                                                    onClick={() => handleEditSave(comment.id)}
                                                     disabled={
-                                                        !editingText.trim()
+                                                        !editingText.trim() ||
+                                                        isSavingEdit
                                                     }
                                                     className="
                                                         rounded-full
@@ -266,12 +312,13 @@ function CommentsSection({ memory }) {
                                                         disabled:opacity-50
                                                     "
                                                 >
-                                                    Save
+                                                    {isSavingEdit ? "Saving..." : "Save"}
                                                 </button>
 
                                                 <button
                                                     type="button"
                                                     onClick={handleEditCancel}
+                                                    disabled={isSavingEdit}
                                                     className="
                                                         rounded-full
                                                         border
@@ -319,7 +366,7 @@ function CommentsSection({ memory }) {
                                                 >
 
                                                     <p className="font-medium">
-                                                        @{comment.username}
+                                                        @{comment.user.username}
                                                     </p>
 
                                                     <span
@@ -365,6 +412,7 @@ function CommentsSection({ memory }) {
                                                 
                                                         <button
                                                             onClick={() => handleDelete(comment.id)}
+                                                            disabled={isDeletingComment}
                                                             className="
                                                                 rounded-full
                                                                 p-1.5
@@ -375,7 +423,22 @@ function CommentsSection({ memory }) {
                                                             "
                                                             aria-label="Delete comment"
                                                         >
-                                                            <FiTrash2 size={14} />
+                                                            {isDeletingComment ? (
+                                                                <span
+                                                                    className="
+                                                                        inline-block
+                                                                        h-3.5
+                                                                        w-3.5
+                                                                        animate-spin
+                                                                        rounded-full
+                                                                        border-2
+                                                                        border-white/20
+                                                                        border-t-red-400
+                                                                    "
+                                                                />
+                                                            ) : (
+                                                                <FiTrash2 size={14} />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 )}
@@ -392,7 +455,7 @@ function CommentsSection({ memory }) {
                                                     text-zinc-400
                                                 "
                                             >
-                                                {comment.text}
+                                                {comment.content}
                                             </p>
                                         </>
                                     )}
@@ -419,6 +482,7 @@ function CommentsSection({ memory }) {
 
                 <input
                     id="comment-input"
+                    disabled = {isCreatingComment}
                     value={newComment}
                     onChange={(event) =>
                         setNewComment(event.target.value)
@@ -446,14 +510,18 @@ function CommentsSection({ memory }) {
 
                 <Button
                     onClick={handleSubmit}
-                    disabled={!newComment.trim() || !user}
+                    disabled={
+                        !newComment.trim() || 
+                        !user ||
+                        isCreatingComment
+                    }
                     className="
                         w-full
                         sm:w-auto
                         sm:px-5
                     "
                 >
-                    Post
+                    {isCreatingComment ? "Posting..." : "Post"}
                 </Button>
 
             </div>

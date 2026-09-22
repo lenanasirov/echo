@@ -39,6 +39,7 @@ function mapMemoryFromApi(memory) {
 
         likes: memory.like_count,
         likedByCurrentUser: Boolean(memory.liked_by_current_user),
+        commentCount: memory.comment_count,
         comments: []
     };
 }
@@ -59,6 +60,89 @@ export async function likeMemory(memoryId) {
 
 export async function unlikeMemory(memoryId) {
     return api.delete(`/memories/${memoryId}/like`);
+}
+
+export async function getMemoryComments(memoryId) {
+    const response = await api.get(`/memories/${memoryId}/comments`);
+
+    return {
+        ...response,
+        data: response.data.data.map((comment) => ({
+            id: comment.id,
+            memoryId: comment.memory_id,
+            user: {
+                id: comment.user_id,
+                name: comment.user_name,
+                username: comment.user_username,
+                avatar: comment.user_avatar
+            },
+            content: comment.content,
+            createdAt: comment.created_at
+        }))
+    };
+}
+
+export async function createMemoryComment(memoryId, content) {
+    const response = await api.post(
+        `/memories/${memoryId}/comments`, 
+        { content }
+    );
+
+    const comment = response.data.data;
+
+    return {
+        ...response,
+        data: {
+            id: comment.id,
+            memoryId: comment.memory_id,
+            user: {
+                id: comment.user_id,
+                name: comment.user_name,
+                username: comment.user_username,
+                avatar: comment.user_avatar
+            },
+            content: comment.content,
+            createdAt: comment.created_at
+        }
+    };
+}
+
+export async function updateMemoryComment(
+    memoryId, 
+    commentId, 
+    content
+) {
+    const response = await api.patch(
+        `/memories/${memoryId}/comments/${commentId}`, 
+        { content }
+    );
+
+    const comment = response.data.data;
+
+    return {
+        ...response,
+        data: {
+            id: comment.id,
+            memoryId: comment.memory_id,
+            user: {
+                id: comment.user_id,
+                name: comment.user_name,
+                username: comment.user_username,
+                avatar: comment.user_avatar
+            },
+            content: comment.content,
+            createdAt: comment.created_at
+        }
+    };
+}
+
+export async function deleteMemoryComment(
+    memoryId, 
+    commentId
+) {
+    await api.delete(
+        `/memories/${memoryId}/comments/${commentId}`
+    );
 }
 
 export async function createMemory(memoryData) {

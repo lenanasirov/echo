@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import {
     FiHeart,
     FiMessageCircle,
@@ -14,7 +14,8 @@ import { useAuth } from "../../hooks/useAuth";
 
 import { 
     likeMemory, 
-    unlikeMemory 
+    unlikeMemory,
+    selectLikeLoading
 } from "../../store/slices/memoriesSlice";
 
 import useImage from "../../hooks/useImage";
@@ -25,6 +26,10 @@ function MemoryCard({ memory, isLocked = false }) {
 
     const { user } = useAuth();
     const { imageUrl, isLoading } = useImage(memory?.image);
+
+    const isLikeLoading = useSelector(
+        (state) => selectLikeLoading(state, memory?.id)
+    );
 
     const handleCardClick = () => {
         if (isLocked) {
@@ -37,7 +42,7 @@ function MemoryCard({ memory, isLocked = false }) {
     const handleLike = (event) => {
         event.stopPropagation();
 
-        if (!user) {
+        if (!user || isLikeLoading) {
             return;
         }
         
@@ -405,6 +410,7 @@ function MemoryCard({ memory, isLocked = false }) {
                             <button
                                 type="button"
                                 onClick={handleLike}
+                                disabled={isLikeLoading}
                                 aria-label={
                                     memory.likedByCurrentUser
                                         ? "Unlike memory"
@@ -428,19 +434,33 @@ function MemoryCard({ memory, isLocked = false }) {
                                     focus-visible:ring-purple-500/50
                                 "
                             >
-                                <FiHeart
-                                    className={`
-                                        text-lg
-                                        transition
-                                        duration-200
-                                        group-hover:scale-110
-                                        ${
-                                            memory.likedByCurrentUser
-                                                ? "fill-pink-500 text-pink-500"
-                                                : ""
-                                        }
-                                    `}
-                                />
+                                {isLikeLoading ? (
+                                    <span
+                                        className="
+                                            h-4
+                                            w-4
+                                            animate-spin
+                                            rounded-full
+                                            border-2
+                                            border-white/20
+                                            border-t-purple-400
+                                        "
+                                    />
+                                ) : (
+                                    <FiHeart
+                                        className={`
+                                            text-lg
+                                            transition
+                                            duration-200
+                                            group-hover:scale-110
+                                            ${
+                                                memory.likedByCurrentUser
+                                                    ? "fill-pink-500 text-pink-500"
+                                                    : ""
+                                            }
+                                        `}
+                                    />
+                                )}
 
                                 <span>
                                     {memory.likes}
@@ -454,7 +474,7 @@ function MemoryCard({ memory, isLocked = false }) {
                                     event.stopPropagation();
                                     navigate(`/memory/${memory.id}#comment-input`);
                                 }}
-                                aria-label={`View ${memory.comments?.length || 0} comments`}
+                                aria-label={`View ${memory.commentCount ?? 0} comments`}
                                 className="
                                     group
                                     flex
@@ -483,7 +503,7 @@ function MemoryCard({ memory, isLocked = false }) {
                                 />
 
                                 <span>
-                                    {memory.comments?.length || 0}
+                                    {memory?.commentCount ?? 0}
                                 </span>
                             </button>
                         </div>
