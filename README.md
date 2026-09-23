@@ -127,17 +127,101 @@ Authentication is handled by the backend using JWTs stored in an HttpOnly cookie
                          └──────────────┘
 ```
 
-### Data Flow
+## Data Flow
 
-Persistent application data follows this flow:
+Persistent memory and application data follow a backend-as-source-of-truth architecture.
 
-**React UI → Redux → API Service → Express API → MySQL**
+All memory operations use the Redux async thunk → API service → Express API architecture.
 
-When data is loaded:
+### Create
 
-**MySQL → Express API → API Service → Redux → React UI**
+```text
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express API
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React UI
+```
 
-Redux acts as the main frontend application state, while MySQL provides persistent storage across refreshes, browser sessions, and different browsers.
+### Read
+
+```text
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express API
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React UI
+```
+
+### Update
+
+```text
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express API
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React UI
+```
+
+### Delete
+
+```text
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express API
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React UI
+```
+
+Redux represents the current frontend application state, while MySQL remains the persistent source of truth.
 
 The frontend uses a centralized API/service layer rather than communicating with the backend directly from UI components.
 
@@ -185,17 +269,27 @@ Persistent application data is stored in MySQL:
 
 The backend is the source of truth for this data.
 
+All persistent memory operations use Redux async thunks and the backend API:
+
 ```text
-React
-  ↓
-Redux
-  ↓
-API
-  ↓
-Express
-  ↓
-MySQL
+Create:
+React → Redux thunk → API → MySQL → Redux → React
+
+Read:
+React → Redux thunk → API → MySQL → Redux → React
+
+Update:
+React → Redux thunk → API → MySQL → Redux → React
+
+Delete:
+React → Redux thunk → API → MySQL → Redux → React
 ```
+
+Frontend Redux state is updated only after successful backend operations.
+
+Failed backend mutations do not modify the corresponding Redux memory state.
+
+---
 
 ## Authentication Session
 
@@ -215,6 +309,8 @@ The authentication cookie is configured with:
 * A 7-day cookie lifetime
 
 The JWT expiration itself is configured through `JWT_EXPIRES_IN`.
+
+---
 
 ## localStorage
 
@@ -241,6 +337,8 @@ The previous persistent keys `echo-user`, `echo-users`, `echo-memories`, and `ec
 
 User authentication is now handled by the backend JWT authentication system rather than a locally stored mock user.
 
+---
+
 ## IndexedDB
 
 IndexedDB is currently used for uploaded image files.
@@ -255,6 +353,8 @@ IndexedDB
 Image metadata is associated with memories in MySQL, while the actual image file remains stored locally in the browser.
 
 This means memory metadata can be synchronized across browsers, but locally stored image files are only available in the browser where they were uploaded.
+
+When a memory is deleted, the associated IndexedDB image is removed only after the backend confirms that the memory was successfully deleted.
 
 Cloudinary-based image storage is planned for a future iteration.
 
@@ -428,6 +528,10 @@ Currently protected routes include:
 ```text
 GET   /api/auth/me
 PATCH /api/users/me
+
+POST   /api/memories
+PATCH  /api/memories/:memoryId
+DELETE /api/memories/:memoryId
 
 POST   /api/memories/:memoryId/like
 DELETE /api/memories/:memoryId/like
@@ -608,23 +712,73 @@ memoryService.js
 MySQL
 ```
 
-For protected requests:
+Reading memories:
 
 ```text
-PATCH /api/users/me
+GET /api/memories
         ↓
-userRoutes.js
+memoryRoutes.js
         ↓
-authMiddleware.js
+memoryController.js
         ↓
-userController.js
-        ↓
-userService.js
+memoryService.js
         ↓
 MySQL
 ```
 
+Updating a memory:
+
+```text
+PATCH /api/memories/:memoryId
+        ↓
+memoryRoutes.js
+        ↓
+authMiddleware.js
+        ↓
+memoryController.js
+        ↓
+memoryService.js
+        ↓
+MySQL
+```
+
+Deleting a memory:
+
+```text
+DELETE /api/memories/:memoryId
+        ↓
+memoryRoutes.js
+        ↓
+authMiddleware.js
+        ↓
+memoryController.js
+        ↓
+memoryService.js
+        ↓
+MySQL
+```
+
+For protected requests:
+
+```text
+Request
+  ↓
+authMiddleware.js
+  ↓
+JWT verification
+  ↓
+req.user
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+```
+
 The service layer keeps database operations separate from HTTP request handling, making the backend easier to maintain and extend.
+
+Memory ownership is enforced in the backend service layer. Frontend ownership checks are used for UI behavior, but they are not treated as the security boundary.
 
 ### Environment Configuration
 
@@ -715,6 +869,8 @@ Stores the Echoes created by users.
 | `created_at`  | Memory creation timestamp             |
 
 Each memory belongs to one user and one Echo cycle.
+
+Memory creation, retrieval, update, and deletion are all handled through the backend API.
 
 ---
 
@@ -1013,11 +1169,17 @@ The authenticated user is identified from the JWT rather than from a user ID sup
 
 # 🎧 Memories
 
+Memory CRUD operations are fully backend-backed. MySQL is the persistent source of truth, while Redux contains the current frontend representation of the data.
+
 ### `GET /api/memories`
 
 Retrieves all memories.
 
 **Authentication:** Optional
+
+The frontend requests memories through the Redux async thunk and centralized API service.
+
+The backend retrieves the memories from MySQL and returns them through the API. Redux then stores the resulting memory data for the React UI.
 
 Memories are returned in descending order by `created_at`.
 
@@ -1040,6 +1202,8 @@ Example interaction data:
 }
 ```
 
+---
+
 ### `POST /api/memories`
 
 Creates a new memory.
@@ -1049,6 +1213,125 @@ Creates a new memory.
 The authenticated user's ID is used as the memory owner.
 
 After creation, the API retrieves the newly created memory together with its associated user information and interaction data.
+
+---
+
+### `PATCH /api/memories/:memoryId`
+
+Updates an existing memory.
+
+**Authentication:** Required
+
+The authenticated user must own the memory.
+
+Supported editable fields include:
+
+```json
+{
+  "songId": "123",
+  "songTitle": "Song Title",
+  "songArtist": "Artist",
+  "mood": "Happy",
+  "caption": "A special moment.",
+  "imageUrl": "indexeddb:123"
+}
+```
+
+The backend:
+
+1. Verifies that the memory exists.
+2. Verifies that the authenticated user owns the memory.
+3. Updates the supported memory fields.
+4. Returns the updated memory.
+
+The backend does not rely on frontend ownership checks for authorization.
+
+**Response — `200 OK`**
+
+```json
+{
+  "success": true,
+  "data": {}
+}
+```
+
+**Possible errors:**
+
+* `401 Unauthorized` — Authentication is missing or invalid.
+* `403 Forbidden` — The authenticated user does not own the memory.
+* `404 Not Found` — The memory does not exist.
+
+If an update fails, the existing Redux memory remains unchanged and the frontend does not navigate away from the edit page.
+
+---
+
+### `DELETE /api/memories/:memoryId`
+
+Deletes an existing memory.
+
+**Authentication:** Required
+
+The authenticated user must own the memory.
+
+The backend:
+
+1. Verifies that the memory exists.
+2. Verifies that the authenticated user owns the memory.
+3. Deletes the memory from MySQL.
+4. Returns a successful response.
+
+Associated likes and comments are automatically removed through the database's cascading foreign key relationships.
+
+**Response — `200 OK`**
+
+```json
+{
+  "success": true,
+  "message": "Memory deleted successfully."
+}
+```
+
+**Possible errors:**
+
+* `401 Unauthorized` — Authentication is missing or invalid.
+* `403 Forbidden` — The authenticated user does not own the memory.
+* `404 Not Found` — The memory does not exist.
+
+The frontend removes the memory from Redux only after the backend confirms successful deletion.
+
+The associated IndexedDB image is also removed only after successful backend deletion.
+
+If the backend deletion fails, the memory remains in MySQL, Redux, and IndexedDB.
+
+---
+
+## Memory Persistence Architecture
+
+All memory operations use the same frontend and backend architecture:
+
+```text
+Create / Read / Update / Delete
+
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React
+```
+
+This prevents frontend-only memory mutations from becoming inconsistent with the persistent database.
 
 ---
 
@@ -1259,6 +1542,128 @@ The service converts supplied timestamps into MySQL-compatible timestamp values 
 
 ---
 
+# 🔒 Authorization
+
+Echo enforces ownership at the backend service layer for memory mutations.
+
+For memory update and deletion:
+
+```text
+Authenticated User
+        ↓
+req.user.id
+        ↓
+Memory ownership check
+        ↓
+Allowed / Rejected
+```
+
+The frontend may hide or disable actions for non-owners, but these UI restrictions are not considered a security boundary.
+
+The backend independently rejects unauthorized mutation requests.
+
+### Owner
+
+The memory owner can:
+
+* Update their memory
+* Delete their memory
+
+### Non-owner
+
+A different authenticated user cannot:
+
+* Update the memory
+* Delete the memory
+
+The backend returns:
+
+```text
+403 Forbidden
+```
+
+### Unauthenticated User
+
+An unauthenticated user cannot perform protected memory mutations.
+
+The backend returns:
+
+```text
+401 Unauthorized
+```
+
+---
+
+# ⚠️ Error Handling
+
+Echo uses consistent backend error responses:
+
+```json
+{
+  "success": false,
+  "message": "Error message"
+}
+```
+
+Memory update and deletion follow safe failure behavior.
+
+### Failed update
+
+If an update fails:
+
+* The MySQL memory remains unchanged.
+* The Redux memory remains unchanged.
+* The user remains on the edit page.
+* The error is exposed to the frontend.
+
+### Failed deletion
+
+If a deletion fails:
+
+* The MySQL memory remains unchanged.
+* The Redux memory remains unchanged.
+* The IndexedDB image remains intact.
+* The user remains on the memory page.
+* The error is exposed to the frontend.
+
+This prevents local frontend state from becoming inconsistent with the backend.
+
+---
+
+# 🚦 Loading States
+
+Memory mutations provide frontend loading states to prevent duplicate operations.
+
+During an update:
+
+```text
+Update request
+      ↓
+Loading state
+      ↓
+Backend response
+      ↓
+Success / Error
+```
+
+During deletion:
+
+```text
+Delete request
+      ↓
+Deleting state
+      ↓
+Backend response
+      ↓
+Success / Error
+```
+
+The delete UI disables the delete button while the operation is in progress.
+
+Frontend handlers also guard against operations being triggered while the same operation is already running.
+
+---
+
 ## HTTP Status Codes
 
 | Status Code                 | Usage                                        |
@@ -1290,6 +1695,10 @@ The API is designed to maintain consistent response and error formats as additio
 * [x] Persistent user sessions
 * [x] User profiles
 * [x] Create memories
+* [x] Read memories from backend
+* [x] Update memories with backend persistence
+* [x] Delete memories with backend persistence
+* [x] Backend memory ownership enforcement
 * [x] Song selection
 * [x] Mood selection
 * [x] Photo upload
@@ -1300,6 +1709,7 @@ The API is designed to maintain consistent response and error formats as additio
 * [x] MySQL database
 * [x] Redux-based application state
 * [x] Backend loading and error handling
+* [x] Safe backend-unavailable handling
 
 ## Social Features
 
@@ -1340,7 +1750,8 @@ The main experience:
 5. Add a photo and personal thought
 6. Share the moment through the Echo feed
 7. Interact with other memories through likes and comments
-8. Revisit memories through your personal soundtrack
+8. Edit or delete your own memories
+9. Revisit memories through your personal soundtrack
 
 ---
 
@@ -1358,18 +1769,84 @@ The project is being built using a structured workflow with GitHub Issues, featu
 
 The current architecture uses **MySQL as the source of truth for persistent application data**, with Redux managing frontend application state.
 
-Persistent data flows through:
+Persistent memory operations now use the complete backend CRUD flow:
 
 ```text
+Create:
 React
   ↓
-Redux
+Redux async thunk
   ↓
 API Service
   ↓
 Express
   ↓
+Controller
+  ↓
+Service
+  ↓
 MySQL
+  ↓
+Redux
+  ↓
+React
+
+Read:
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React
+
+Update:
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React
+
+Delete:
+React
+  ↓
+Redux async thunk
+  ↓
+API Service
+  ↓
+Express
+  ↓
+Controller
+  ↓
+Service
+  ↓
+MySQL
+  ↓
+Redux
+  ↓
+React
 ```
 
 Authentication sessions are handled separately through a backend-generated JWT stored in an HttpOnly cookie.
@@ -1389,11 +1866,14 @@ Persistent backend functionality currently includes:
 * User accounts and profiles
 * JWT-based authentication
 * Echo cycles
-* Memories
 * Echo streaks
+* Complete memory CRUD
+* Memory ownership enforcement
 * Memory likes
 * Memory comments
 * Comment ownership and authorization
+* Interaction counts
+* Current-user like state
 
 Browser-specific storage is intentionally limited to:
 
@@ -1401,6 +1881,10 @@ Browser-specific storage is intentionally limited to:
 * Locally stored image files
 
 Real backend authentication has been implemented, including registration, login, session restoration, protected routes, password hashing, JWT validation, and logout.
+
+Memory persistence has been fully migrated to the backend. Memory creation, retrieval, updates, and deletion now use Redux async thunks, centralized API requests, authenticated backend endpoints, and MySQL as the persistent source of truth.
+
+Memory ownership is enforced by the backend for update and deletion operations, while Redux is updated only after successful backend operations.
 
 Persistent social interactions have also been implemented, including likes, unlike functionality, comments, comment editing and deletion, ownership enforcement, interaction counts, current-user like state, and loading/error handling.
 
