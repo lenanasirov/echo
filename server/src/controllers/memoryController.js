@@ -2,6 +2,7 @@ import {
     getAllMemories, 
     createMemory, 
     updateMemory,
+    deleteMemory,
     likeMemory,
     unlikeMemory,
     getMemoryComments,
@@ -65,6 +66,24 @@ export async function patchMemory(req, res, next) {
         res.status(200).json({
             success: true,
             data: memory
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function removeMemory(req, res, next) {
+    try {
+        const { memoryId } = req.params;
+
+        await deleteMemory({
+            memoryId,
+            userId: req.user.id
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Memory deleted successfully."
         });
     } catch (error) {
         next(error);

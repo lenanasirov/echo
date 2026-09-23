@@ -202,4 +202,14 @@ export async function updateMemory(memoryId, memoryData) {
     };
 }
 
+export async function deleteMemory(memoryId) {
+    const response = await api.delete(
+        `/memories/${memoryId}`
+    );
+
+    return {
+        response
+    };
+}
+
 

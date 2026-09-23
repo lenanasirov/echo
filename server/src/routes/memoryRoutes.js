@@ -4,6 +4,7 @@ import {
     getMemories, 
     postMemory,
     patchMemory,
+    removeMemory,
     postLike,
     deleteLike,
     getComments,
@@ -22,6 +23,7 @@ const router = Router();
 router.get("/", optionalAuthenticate, getMemories);
 router.post("/", authenticate ,postMemory);
 router.patch("/:memoryId", authenticate, patchMemory);
+router.delete("/:memoryId", authenticate, removeMemory);
 
 router.post("/:memoryId/like", authenticate, postLike);
 router.delete("/:memoryId/like", authenticate, deleteLike);

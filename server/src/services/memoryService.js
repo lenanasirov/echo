@@ -225,6 +225,39 @@ export async function updateMemory({
     return rows[0];
 }
 
+export async function deleteMemory({ memoryId, userId }) {
+    const [memoryRows] = await pool.query(
+        `
+        SELECT
+            id,
+            user_id
+        FROM memories
+        WHERE id = ?
+        `,
+        [memoryId]
+    );
+
+    if (memoryRows.length === 0) {
+        const error = new Error("Memory not found.");
+        error.status = 404;
+        throw error;
+    }
+
+    if (memoryRows[0].user_id !== userId) {
+        const error = new Error("You can only modify your own memories.");
+        error.status = 403;
+        throw error;
+    }
+
+    await pool.query(
+        `
+        DELETE FROM memories
+        WHERE id = ?
+        `,
+        [memoryId]
+    );
+}
+
 export async function likeMemory(memoryId, userId) {
     const [memoryRows] = await pool.query(
         `

@@ -128,15 +128,15 @@ function MemoryDetails() {
         setIsDeleting(true);
 
         try {
-            // Delete the image from IndexedDB
-            // only if this memory uses IndexedDB storage.
-            if (memory.image && typeof memory.image === "object" && memory.image.type === "indexeddb") {
+            await dispatch(deleteMemory(memory.id)).unwrap();
+
+            if (
+                memory.image && 
+                typeof memory.image === "object" && 
+                memory.image.type === "indexeddb"
+            ) {
                 await deleteImage(memory.image.id);
             } 
-
-            // Delete the memory from Redux.
-            // The reducer will also update localStorage.
-            dispatch(deleteMemory(memory));
 
             navigate(-1);
 
@@ -164,6 +164,10 @@ function MemoryDetails() {
     }
     
     if(!memory){
+        if (isDeleting) {
+            return null;
+        }
+
         return(
             <div
                 className="

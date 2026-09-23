@@ -130,7 +130,7 @@ function EditMemory(){
                     </h1>
     
                     <p className="mt-3 text-zinc-400">
-                        This Echo is from a previous cycle and can no longer be edited.
+                        Memories from previous moments can no longer be edited.
                     </p>
     
                     <Link to="/feed">
