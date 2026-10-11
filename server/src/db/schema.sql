@@ -71,6 +71,7 @@ CREATE TABLE memories (
     location VARCHAR(255) NULL,
 
     image_url VARCHAR(500) NULL,
+    image_public_id VARCHAR(500) NULL,
 
     created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 

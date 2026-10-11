@@ -11,6 +11,11 @@ import {
     deleteMemoryComment
 } from "../services/memoryService.js";
 
+import { 
+    uploadImage,
+    deleteImage
+} from "../services/cloudinaryService.js";
+
 export async function getMemories(req, res, next) {
     try {
         const memories = await getAllMemories(req.user?.id);
@@ -25,9 +30,25 @@ export async function getMemories(req, res, next) {
 }
 
 export async function postMemory(req, res, next) {
+    let uploadedImage = null;
+
     try {
+        let imageUrl = null;
+        let imagePublicId = null;
+
+        if (req.file) {
+            uploadedImage = await uploadImage(req.file, {
+                folder: "echo/memories"
+            });
+
+            imageUrl = uploadedImage.url;
+            imagePublicId = uploadedImage.publicId;
+        }
+
         const memory = await createMemory({
             ...req.body, 
+            imageUrl,
+            imagePublicId,
             userId: req.user.id
         });
 
@@ -36,23 +57,48 @@ export async function postMemory(req, res, next) {
             data: memory
         });
     } catch (error) {
+        if (uploadedImage?.publicId) {
+            try {
+                await deleteImage(uploadedImage.publicId);
+            } catch (cleanupError) {
+                console.error(
+                    "Failed to clean up Cloudinary image after memory creation failed:", 
+                    cleanupError
+                );
+            }
+        }
+
         next(error);
     }
 }
 
 export async function patchMemory(req, res, next) {
+    let uploadedImage = null;
+
     try {
         const { memoryId } = req.params;
+
         const {
             songId,
             songTitle,
             songArtist,
             mood,
-            caption,
-            imageUrl
+            caption
         } = req.body;
 
-        const memory = await updateMemory({
+        let imageUrl;
+        let imagePublicId;
+
+        if (req.file) {
+            uploadedImage = await uploadImage(req.file, {
+                folder: "echo/memories"
+            });
+
+            imageUrl = uploadedImage.url;
+            imagePublicId = uploadedImage.publicId;
+        }
+
+        const result = await updateMemory({
             memoryId,
             userId: req.user.id,
             songId,
@@ -60,14 +106,50 @@ export async function patchMemory(req, res, next) {
             songArtist,
             mood,
             caption,
-            imageUrl
+            imageUrl,
+            imagePublicId
         });
+
+        if (result.previousImagePublicId) {
+            try {
+                const cleanupResult = await deleteImage(
+                    result.previousImagePublicId
+                );
+
+                console.log(
+                    "Previous Cloudinary image cleanup result:", 
+                    cleanupResult
+                );
+            } catch (cleanupError) {
+                console.error(
+                    "Failed to clean up previous Cloudinary image after memory update:", 
+                    cleanupError
+                );
+            }
+        }
 
         res.status(200).json({
             success: true,
-            data: memory
+            data: result.memory
         });
     } catch (error) {
+        if (uploadedImage?.publicId) {
+            try {
+                const cleanupResult = await deleteImage(
+                    uploadedImage.publicId
+                );
+
+                console.log(
+                    "New Cloudinary image cleanup result:", 
+                    cleanupResult
+                );
+            } catch (cleanupError) {
+                console.error(
+                    "Failed to clean up new Cloudinary image after memory update failed:", 
+                    cleanupError
+                );
+            }
+        }
         next(error);
     }
 }
@@ -76,10 +158,28 @@ export async function removeMemory(req, res, next) {
     try {
         const { memoryId } = req.params;
 
-        await deleteMemory({
+        const result = await deleteMemory({
             memoryId,
             userId: req.user.id
         });
+
+        if (result.imagePublicId) {
+            try {
+                const cleanupResult = await deleteImage(
+                    result.imagePublicId
+                );
+
+                console.log(
+                    "Deleted Cloudinary image cleanup result:", 
+                    cleanupResult
+                );
+            } catch (cleanupError) {
+                console.error(
+                    "Failed to clean up Cloudinary image after memory deletion:", 
+                    cleanupError
+                );
+            }
+        }
 
         res.status(200).json({
             success: true,
@@ -177,3 +277,4 @@ export async function deleteComment(req, res, next) {
         next(error);
     }
 }
+

@@ -14,7 +14,6 @@ import {
     unlikeMemory,
     selectLikeLoading
 } from "../store/slices/memoriesSlice";
-import { deleteImage } from "../utils/imageStorage";
 import { canViewMemory, canEditMemory } from "../utils/memoryAccess";
 import useImage from "../hooks/useImage";
 import Button from "../components/common/Button";
@@ -32,13 +31,13 @@ import {
 
 
 function MemoryDetails() {
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
 
     const { memories, status } = useSelector(
         (state) => state.memories
     );
 
-    const { cycle } = useSelector((state) => state.echoCycle);
+    const { cycle, status: cycleStatus } = useSelector((state) => state.echoCycle);
     
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -130,16 +129,7 @@ function MemoryDetails() {
         try {
             await dispatch(deleteMemory(memory.id)).unwrap();
 
-            if (
-                memory.image && 
-                typeof memory.image === "object" && 
-                memory.image.type === "indexeddb"
-            ) {
-                await deleteImage(memory.image.id);
-            } 
-
             navigate(-1);
-
         } catch (error) {
             console.error("Failed to delete memory:", error);
             setIsDeleting(false);
@@ -197,6 +187,18 @@ function MemoryDetails() {
 
             </div>
         )
+    }
+
+    if (
+        isAuthLoading ||
+        cycleStatus === "idle" ||
+        cycleStatus === "loading"
+    ) {
+        return (
+            <div className="mx-auto max-w-4xl px-6 py-16 text-center text-zinc-400">
+                Loading memory...
+            </div>
+        );
     }
 
     if (!canView) {

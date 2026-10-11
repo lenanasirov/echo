@@ -28,12 +28,7 @@ function mapMemoryFromApi(memory) {
         caption: memory.caption,
         location: memory.location,
 
-        image: memory.image_url?.startsWith("indexeddb:")
-            ? {
-                type: "indexeddb",
-                id: Number(memory.image_url.replace("indexeddb:", ""))
-            }
-            : memory.image_url,
+        image: memory.image_url || null,
 
         createdAt: memory.created_at,
 
@@ -146,60 +141,58 @@ export async function deleteMemoryComment(
 }
 
 export async function createMemory(memoryData) {
-    // Convert frontend memory format → backend API format
-    const payload = {
-        id: memoryData.id,
-        userId: memoryData.user?.id,
-        cycleId: memoryData.cycleId,
+    const formData = new FormData();
+    formData.append("id", memoryData.id);
+    formData.append("cycleId", memoryData.cycleId);
 
-        songId: memoryData.song?.id ?? null,
-        songTitle: memoryData.song?.title ?? null,
-        songArtist: memoryData.song?.artist ?? null,
+    // if(memoryData.user?.id != null){
+    //     formData.append("userId", memoryData.user.id);
+    // }
 
-        mood: memoryData.mood ?? null,
-        caption: memoryData.caption ?? null,
-        location: memoryData.location ?? null,
+    if(memoryData.song?.id != null){
+        formData.append("songId", memoryData.song.id);
+    }
+    formData.append("songTitle", memoryData.song?.title ?? "");
+    formData.append("songArtist", memoryData.song?.artist ?? "");
+    formData.append("mood", memoryData.mood ?? "");
+    formData.append("caption", memoryData.caption ?? "");
+    formData.append("location", memoryData.location ?? "");
 
-        imageUrl: memoryData.image
-            ? `indexeddb:${memoryData.image.id}`
-            : null
-    };
+    if(memoryData.imageFile){
+        formData.append("image", memoryData.imageFile);
+    }
 
-    const response = await api.post("/memories", payload);
-
+    const response = await api.post("/memories", formData);
     const mappedMemory = mapMemoryFromApi(response.data.data);
 
-    // Convert backend response → frontend memory format
-    return {
-        ...response,
-
-        data: mappedMemory
-    };
+    return {...response, data: mappedMemory};
 }
 
 export async function updateMemory(memoryId, memoryData) {
-    const payload = {
-        songId: memoryData.song?.id ?? null,
-        songTitle: memoryData.song?.title ?? null,
-        songArtist: memoryData.song?.artist ?? null,
-        mood: memoryData.mood ?? null,
-        caption: memoryData.caption ?? null,
-        imageUrl: memoryData.image
-            ? `indexeddb:${memoryData.image.id}`
-            : null
-    };
+    const formData = new FormData();
 
+    if(memoryData.song?.id != null){
+        formData.append("songId", memoryData.song.id);
+    } else {
+        formData.append("songId", "");
+    }
+    formData.append("songTitle", memoryData.song?.title ?? "");
+    formData.append("songArtist", memoryData.song?.artist ?? "");
+    formData.append("mood", memoryData.mood ?? "");
+    formData.append("caption", memoryData.caption ?? "");
+
+    if(memoryData.imageFile){
+        formData.append("image", memoryData.imageFile);
+    }
+    
     const response = await api.patch(
         `/memories/${memoryId}`,
-        payload
+        formData
     );
 
     const mappedMemory = mapMemoryFromApi(response.data.data);
 
-    return {
-        ...response,
-        data: mappedMemory
-    };
+    return {...response, data: mappedMemory};
 }
 
 export async function deleteMemory(memoryId) {

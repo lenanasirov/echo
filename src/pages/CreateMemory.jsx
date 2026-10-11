@@ -4,8 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { useState } from "react";
 
-import { saveImage } from "../utils/imageStorage";
-
 import { createMemory } from "../store/slices/memoriesSlice";
 
 import { useAuth } from "../hooks/useAuth";
@@ -42,63 +40,29 @@ function CreateMemory() {
 
         const memoryId = Date.now();
 
-        try {
-            await saveImage(
-                memoryId,
-                imageFile
-            );
+        const newMemory = {
+            id: memoryId,
+            cycleId: cycle.id,
+            user: {
+                id: user.id,
+                name: user.name,
+                username: user.username,
+                avatar: user.avatar
+            },
+            imageFile,
+            song: selectedSong,
+            mood: selectedMood,
+            caption,
+            location: "Ashdod, Israel",
+            createdAt: new Date().toISOString(),
+            likes: 0,
+            likedBy: [],
+            comments: []
+        };
 
-            const newMemory = {
-                id: memoryId,
-
-                cycleId: cycle.id,
-
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    username: user.username,
-                    avatar: user.avatar
-                },
-
-                image: {
-                    type: "indexeddb",
-                    id: memoryId
-                },
-
-                song: selectedSong,
-
-                mood: selectedMood,
-
-                caption,
-
-                location: "Ashdod, Israel",
-
-                createdAt: new Date().toISOString(),
-
-                likes: 0,
-
-                likedBy: [],
-
-                comments: []
-            };
-
-            await dispatch(
-                createMemory(newMemory)
-            ).unwrap();
-
-            updateStreak(cycle);
-
-            navigate("/feed");
-        } catch (error) {
-            console.error(
-                "Failed to create memory:",
-                error
-            );
-
-            setError(
-                "Couldn't save your Echo. Please check your connection and try again."
-            );
-        }
+        await dispatch(createMemory(newMemory)).unwrap();
+        updateStreak(cycle);
+        navigate("/feed");
     };
 
     return (

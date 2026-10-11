@@ -14,6 +14,7 @@ export async function getAllMemories(userId=null) {
             m.caption,
             m.location,
             m.image_url,
+            m.image_public_id,
             m.created_at,
             u.name AS user_name,
             u.username AS user_username,
@@ -56,6 +57,7 @@ export async function getAllMemories(userId=null) {
             m.caption,
             m.location,
             m.image_url,
+            m.image_public_id,
             m.created_at,
             u.name,
             u.username,
@@ -80,7 +82,8 @@ export async function createMemory(memoryData) {
         mood,
         caption,
         location,
-        imageUrl
+        imageUrl,
+        imagePublicId
     } = memoryData;
 
     await pool.query(
@@ -95,9 +98,10 @@ export async function createMemory(memoryData) {
             mood,
             caption,
             location,
-            image_url
+            image_url,
+            image_public_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
             id,
@@ -109,7 +113,8 @@ export async function createMemory(memoryData) {
             mood || null,
             caption || null,
             location || null,
-            imageUrl || null
+            imageUrl || null,
+            imagePublicId || null
         ]
     );
 
@@ -126,6 +131,7 @@ export async function createMemory(memoryData) {
             m.caption,
             m.location,
             m.image_url,
+            m.image_public_id,
             m.created_at,
             u.name AS user_name,
             u.username AS user_username,
@@ -149,13 +155,15 @@ export async function updateMemory({
     songArtist,
     mood,
     caption,
-    imageUrl
+    imageUrl,
+    imagePublicId
 }) {
     const [memoryRows] = await pool.query(
         `
         SELECT
             id,
-            user_id
+            user_id,
+            image_public_id
         FROM memories
         WHERE id = ?
         `,
@@ -174,28 +182,43 @@ export async function updateMemory({
         throw error;
     }
 
-    await pool.query(
-        `
+    let updateQuery = `
         UPDATE memories
         SET
             song_id = ?,
             song_title = ?,
             song_artist = ?,
             mood = ?,
-            caption = ?,
-            image_url = ?
+            caption = ?
+    `;
+
+    const updateValues = [
+        songId || null,
+        songTitle || null,
+        songArtist || null,
+        mood || null,
+        caption || null
+    ];
+
+    if (imageUrl !== undefined) {
+        updateQuery += `,
+            image_url = ?,
+            image_public_id = ?
+        `;
+
+        updateValues.push(
+            imageUrl,
+            imagePublicId || null
+        );
+    }
+
+    updateQuery += `
         WHERE id = ?
-        `,
-        [
-            songId || null,
-            songTitle || null,
-            songArtist || null,
-            mood || null,
-            caption || null,
-            imageUrl || null,
-            memoryId
-        ]
-    );
+    `;
+
+    updateValues.push(memoryId);
+
+    await pool.query(updateQuery, updateValues);
 
     const [rows] = await pool.query(
         `
@@ -210,6 +233,7 @@ export async function updateMemory({
             m.caption,
             m.location,
             m.image_url,
+            m.image_public_id,
             m.created_at,
             u.name AS user_name,
             u.username AS user_username,
@@ -222,7 +246,12 @@ export async function updateMemory({
         [memoryId]
     );
 
-    return rows[0];
+    return {
+        memory: rows[0],
+        previousImagePublicId: imageUrl !== undefined
+            ? memoryRows[0].image_public_id
+            : null
+    };
 }
 
 export async function deleteMemory({ memoryId, userId }) {
@@ -230,7 +259,8 @@ export async function deleteMemory({ memoryId, userId }) {
         `
         SELECT
             id,
-            user_id
+            user_id,
+            image_public_id
         FROM memories
         WHERE id = ?
         `,
@@ -256,6 +286,10 @@ export async function deleteMemory({ memoryId, userId }) {
         `,
         [memoryId]
     );
+
+    return {
+        imagePublicId: memoryRows[0].image_public_id
+    }
 }
 
 export async function likeMemory(memoryId, userId) {

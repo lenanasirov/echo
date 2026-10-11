@@ -18,11 +18,13 @@ import {
     optionalAuthenticate
 } from "../middleware/authMiddleware.js";
 
+import { uploadMemoryImage } from "../middleware/uploadMiddleware.js";
+
 const router = Router();
 
 router.get("/", optionalAuthenticate, getMemories);
-router.post("/", authenticate ,postMemory);
-router.patch("/:memoryId", authenticate, patchMemory);
+router.post("/", authenticate, uploadMemoryImage, postMemory);
+router.patch("/:memoryId", authenticate, uploadMemoryImage, patchMemory);
 router.delete("/:memoryId", authenticate, removeMemory);
 
 router.post("/:memoryId/like", authenticate, postLike);

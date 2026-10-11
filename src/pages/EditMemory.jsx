@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useEffect } from "react";
 
 import { updateMemory, fetchMemories } from "../store/slices/memoriesSlice";
-import { saveImage } from "../utils/imageStorage";
 import { canEditMemory } from "../utils/memoryAccess";
 import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
@@ -159,23 +158,13 @@ function EditMemory(){
         selectedSong, 
         existingImage
     }) => {
-        let image = existingImage;
-
-        if (imageFile) {
-            await saveImage(memory.id, imageFile);
-
-            image = {
-                type: "indexeddb",
-                id: memory.id
-            };
-        }
-
         const updatedMemory = {
             ...memory,
-            image,
+            image: existingImage,
             mood: selectedMood,
             caption,
-            song: selectedSong
+            song: selectedSong,
+            ...(imageFile ? {imageFile} : {})
         };
 
         try{
