@@ -77,15 +77,13 @@ The design direction:
 
 ## Browser Storage
 
-* localStorage — frontend-only UI and notification/reminder state
-* IndexedDB — locally stored uploaded image files
+* **localStorage** — Frontend-only Echo cycle notification and reminder state.
 
-## Planned External Services
+## External Services
 
-* Spotify API — planned
-* Cloudinary — planned
+* **Cloudinary** — Integrated cloud storage for memory images, including uploads, replacements, and deletion cleanup.
+* **Spotify API** — Planned for future music integration.
 
-These external services are not currently integrated. Images currently remain in the browser's IndexedDB storage.
 
 ---
 
@@ -339,24 +337,48 @@ User authentication is now handled by the backend JWT authentication system rath
 
 ---
 
-## IndexedDB
+## Cloudinary Image Storage
 
-IndexedDB is currently used for uploaded image files.
+Echo uses Cloudinary to store uploaded memory images outside the browser.
+
+Images are uploaded through the existing memory creation and update endpoints using `multipart/form-data`. The backend validates uploaded files and uploads them to Cloudinary using server-side credentials.
+
+MySQL stores the image's secure URL and Cloudinary public ID, while the actual image file is stored in Cloudinary.
 
 ```text
-IndexedDB
-└── echo-db
-    └── images
-        └── uploaded image files
+Memory image upload
+        ↓
+React Memory Form
+        ↓
+FormData + Axios
+        ↓
+Express API
+        ↓
+Multer validation
+        ↓
+Cloudinary Service
+        ↓
+Cloudinary image storage
+        ↓
+image_url + image_public_id
+        ↓
+MySQL
 ```
 
-Image metadata is associated with memories in MySQL, while the actual image file remains stored locally in the browser.
+The `image_url` is used to display the image in the frontend. The `image_public_id` identifies the Cloudinary asset for replacement and deletion.
 
-This means memory metadata can be synchronized across browsers, but locally stored image files are only available in the browser where they were uploaded.
+### Image Lifecycle
 
-When a memory is deleted, the associated IndexedDB image is removed only after the backend confirms that the memory was successfully deleted.
+* **Create:** Upload the image to Cloudinary and store its URL and public ID in MySQL.
+* **Read:** Retrieve the image URL from the backend and display the cloud-hosted image.
+* **Update:** Upload a replacement image, update the database reference, and then remove the previous Cloudinary image.
+* **Delete:** Delete the memory from MySQL and then attempt to remove its associated Cloudinary image.
 
-Cloudinary-based image storage is planned for a future iteration.
+If a database operation fails after a new image is uploaded, the backend attempts to clean up the new upload. When an image replacement fails, the previous image is preserved.
+
+Cloudinary cleanup failures after a successful database deletion are handled separately and may leave an orphaned cloud image.
+
+Uploaded images are no longer dependent on browser-local IndexedDB storage, allowing them to be accessed across browsers and devices wherever the application and image URL are accessible.
 
 ---
 
@@ -659,7 +681,8 @@ server/
 │   │
 │   ├── middleware/
 │   │   ├── authMiddleware.js
-│   │   └── errorHandler.js
+│   │   ├── errorHandler.js
+│   │   └── uploadMiddleware.js
 │   │
 │   ├── routes/
 │   │   ├── authRoutes.js
@@ -671,7 +694,8 @@ server/
 │   │   ├── authService.js
 │   │   ├── userService.js
 │   │   ├── memoryService.js
-│   │   └── echoCycleService.js
+│   │   ├── echoCycleService.js
+│   │   └── cloudinaryService.js
 │   │
 │   └── app.js
 │
@@ -799,6 +823,10 @@ DB_NAME=echo
 
 JWT_SECRET=your-development-secret
 JWT_EXPIRES_IN=7d
+
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
 ---
@@ -854,19 +882,20 @@ Each cycle can reference its previous cycle through `previous_cycle_id`, allowin
 
 Stores the Echoes created by users.
 
-| Column        | Description                           |
-| ------------- | ------------------------------------- |
-| `id`          | Unique memory identifier              |
-| `user_id`     | User who created the memory           |
-| `cycle_id`    | Echo cycle associated with the memory |
-| `song_id`     | Optional song identifier              |
-| `song_title`  | Song title                            |
-| `song_artist` | Song artist                           |
-| `mood`        | Mood associated with the memory       |
-| `caption`     | Optional personal thought             |
-| `location`    | Optional location                     |
-| `image_url`   | Optional image reference              |
-| `created_at`  | Memory creation timestamp             |
+| Column              | Description                                                                       |
+| ------------------- | --------------------------------------------------------------------------------- |
+| `id`                | Unique memory identifier                                                          |
+| `user_id`           | User who created the memory                                                       |
+| `cycle_id`          | Echo cycle associated with the memory                                             |
+| `song_id`           | Optional song identifier                                                          |
+| `song_title`        | Song title                                                                        |
+| `song_artist`       | Song artist                                                                       |
+| `mood`              | Mood associated with the memory                                                   |
+| `caption`           | Optional personal thought                                                         |
+| `location`          | Optional location                                                                 |
+| `image_url`         | Secure URL of the Cloudinary-hosted image                                         |
+| `image_public_id`   | Cloudinary public ID used to identify the image for replacement and deletion      |
+| `created_at`        | Memory creation timestamp                                                         |
 
 Each memory belongs to one user and one Echo cycle.
 
@@ -1135,35 +1164,21 @@ Logs out the current browser session by clearing the authentication cookie.
 
 # 👤 Users
 
-### `GET /api/users`
-
-Retrieves all users.
-
-Users are returned in descending order by `created_at`.
-
-**Authentication:** Public
-
-### `POST /api/users`
-
-Creates a user record.
-
-**Authentication:** Public
-
-The database initializes:
-
-* `streak` to `0`
-* `last_streak_cycle_id` to `NULL`
-* `created_at` automatically
-
-> Normal application registration should use `/api/auth/register`, which also handles password hashing and authentication.
-
 ### `PATCH /api/users/me`
 
-Updates the currently authenticated user's profile and persistent streak data.
+Updates the currently authenticated user's profile and supported user fields.
 
 **Authentication:** Required
 
-The authenticated user is identified from the JWT rather than from a user ID supplied by the client.
+The authenticated user's ID is obtained from the JWT rather than from a user ID supplied by the client.
+
+The endpoint is intended for profile updates. Account registration is handled exclusively through `POST /api/auth/register`, which includes password hashing and authentication.
+
+**Possible errors:**
+
+* `401 Unauthorized` — Authentication is missing or invalid.
+* `500 Internal Server Error` — An unexpected server or database error occurs.
+
 
 ---
 
@@ -1212,6 +1227,8 @@ Creates a new memory.
 
 The authenticated user's ID is used as the memory owner.
 
+The endpoint accepts `multipart/form-data`, including the memory metadata and an image file in the `image` field. Uploaded images are validated by the backend and stored in Cloudinary. The resulting image URL and public ID are saved in MySQL.
+
 After creation, the API retrieves the newly created memory together with its associated user information and interaction data.
 
 ---
@@ -1224,25 +1241,29 @@ Updates an existing memory.
 
 The authenticated user must own the memory.
 
+Memory updates accept `multipart/form-data`, allowing memory metadata and an optional image file to be submitted together.
+
 Supported editable fields include:
 
-```json
-{
-  "songId": "123",
-  "songTitle": "Song Title",
-  "songArtist": "Artist",
-  "mood": "Happy",
-  "caption": "A special moment.",
-  "imageUrl": "indexeddb:123"
-}
-```
+* `songId` — Optional song identifier.
+* `songTitle` — Song title.
+* `songArtist` — Song artist.
+* `mood` — Mood associated with the memory.
+* `caption` — Optional personal thought.
+* `image` — Optional JPEG, PNG, or WebP image file, up to 5 MB.
+
+If a new image is provided, the backend uploads it to Cloudinary and stores the resulting image URL and public ID in MySQL. If no new image is provided, the existing image is preserved.
 
 The backend:
 
 1. Verifies that the memory exists.
 2. Verifies that the authenticated user owns the memory.
-3. Updates the supported memory fields.
-4. Returns the updated memory.
+3. Validates and uploads a replacement image to Cloudinary if one is provided.
+4. Updates the supported memory fields in MySQL.
+5. Deletes the previous Cloudinary image after a successful database update, when applicable.
+6. Returns the updated memory.
+
+If the database update fails after a new image has been uploaded, the backend attempts to delete the new upload and preserves the previous image.
 
 The backend does not rely on frontend ownership checks for authorization.
 
@@ -1257,9 +1278,11 @@ The backend does not rely on frontend ownership checks for authorization.
 
 **Possible errors:**
 
+* `400 Bad Request` — Invalid request data or unsupported image type.
 * `401 Unauthorized` — Authentication is missing or invalid.
 * `403 Forbidden` — The authenticated user does not own the memory.
 * `404 Not Found` — The memory does not exist.
+* `500 Internal Server Error` — An unexpected server or database error occurs.
 
 If an update fails, the existing Redux memory remains unchanged and the frontend does not navigate away from the edit page.
 
@@ -1277,10 +1300,14 @@ The backend:
 
 1. Verifies that the memory exists.
 2. Verifies that the authenticated user owns the memory.
-3. Deletes the memory from MySQL.
-4. Returns a successful response.
+3. Retrieves the Cloudinary public ID associated with the memory, if one exists.
+4. Deletes the memory from MySQL.
+5. Attempts to delete the associated Cloudinary image using its public ID.
+6. Returns a successful response.
 
 Associated likes and comments are automatically removed through the database's cascading foreign key relationships.
+
+Cloudinary cleanup occurs after successful database deletion. If cloud image deletion fails, the database deletion remains successful, although the image may remain in Cloudinary.
 
 **Response — `200 OK`**
 
@@ -1296,12 +1323,13 @@ Associated likes and comments are automatically removed through the database's c
 * `401 Unauthorized` — Authentication is missing or invalid.
 * `403 Forbidden` — The authenticated user does not own the memory.
 * `404 Not Found` — The memory does not exist.
+* `500 Internal Server Error` — An unexpected database or server error occurs.
 
 The frontend removes the memory from Redux only after the backend confirms successful deletion.
 
-The associated IndexedDB image is also removed only after successful backend deletion.
+If the database deletion fails, the memory remains in MySQL and Redux, and the Cloudinary image is not deleted.
 
-If the backend deletion fails, the memory remains in MySQL, Redux, and IndexedDB.
+If the database deletion succeeds but Cloudinary cleanup fails, the memory remains deleted, but the cloud image may remain until it is cleaned up separately.
 
 ---
 
@@ -1622,11 +1650,13 @@ If a deletion fails:
 
 * The MySQL memory remains unchanged.
 * The Redux memory remains unchanged.
-* The IndexedDB image remains intact.
+* The Cloudinary image remains intact.
 * The user remains on the memory page.
 * The error is exposed to the frontend.
 
 This prevents local frontend state from becoming inconsistent with the backend.
+
+**Note:** If the MySQL deletion succeeds but Cloudinary cleanup fails, the memory remains deleted, but its image may remain in Cloudinary as an orphaned file.
 
 ---
 
@@ -1710,6 +1740,10 @@ The API is designed to maintain consistent response and error formats as additio
 * [x] Redux-based application state
 * [x] Backend loading and error handling
 * [x] Safe backend-unavailable handling
+* [x] Cloudinary image storage
+* [x] Server-side image validation
+* [x] Cloud image replacement and cleanup
+* [x] Memory image URLs and public IDs persisted in MySQL
 
 ## Social Features
 
@@ -1731,7 +1765,6 @@ The API is designed to maintain consistent response and error formats as additio
 # 🔮 Planned Features
 
 * [ ] Spotify API integration
-* [ ] Cloud-based image storage
 * [ ] Advanced friend interactions
 * [ ] Personal music statistics
 * [ ] Yearly "Sound Journey" recap
@@ -1763,134 +1796,29 @@ Coming soon...
 
 # 📌 Project Status
 
-Echo is currently under active development.
+Echo is under active development, built using a structured workflow with GitHub Issues, feature-based development, and iterative improvements.
 
-The project is being built using a structured workflow with GitHub Issues, feature-based development, and iterative UX improvements.
+The application uses **React, Redux Toolkit, Node.js, Express, and MySQL**, with Cloudinary for cloud-based memory image storage.
 
-The current architecture uses **MySQL as the source of truth for persistent application data**, with Redux managing frontend application state.
+### Implemented Features
 
-Persistent memory operations now use the complete backend CRUD flow:
+* User registration, login, and JWT authentication using HttpOnly cookies
+* User profiles and persistent Echo cycles and streaks
+* Complete memory CRUD with MySQL persistence
+* Cloudinary image uploads, replacements, and deletion cleanup
+* Backend-enforced memory ownership and authorization
+* Persistent likes, comments, and interaction counts
+* Redux-based state management and loading/error handling
 
-```text
-Create:
-React
-  ↓
-Redux async thunk
-  ↓
-API Service
-  ↓
-Express
-  ↓
-Controller
-  ↓
-Service
-  ↓
-MySQL
-  ↓
-Redux
-  ↓
-React
+MySQL is the source of truth for persistent application data, while Redux manages frontend state. Uploaded images are stored in Cloudinary, with their URLs and public IDs saved in MySQL. Browser storage is limited to frontend-specific notification and reminder state.
 
-Read:
-React
-  ↓
-Redux async thunk
-  ↓
-API Service
-  ↓
-Express
-  ↓
-Controller
-  ↓
-Service
-  ↓
-MySQL
-  ↓
-Redux
-  ↓
-React
+### Planned Features
 
-Update:
-React
-  ↓
-Redux async thunk
-  ↓
-API Service
-  ↓
-Express
-  ↓
-Controller
-  ↓
-Service
-  ↓
-MySQL
-  ↓
-Redux
-  ↓
-React
-
-Delete:
-React
-  ↓
-Redux async thunk
-  ↓
-API Service
-  ↓
-Express
-  ↓
-Controller
-  ↓
-Service
-  ↓
-MySQL
-  ↓
-Redux
-  ↓
-React
-```
-
-Authentication sessions are handled separately through a backend-generated JWT stored in an HttpOnly cookie.
-
-```text
-React
-  ↓
-Axios
-  ↓
-Express API
-  ↓
-JWT + HttpOnly Cookie
-```
-
-Persistent backend functionality currently includes:
-
-* User accounts and profiles
-* JWT-based authentication
-* Echo cycles
-* Echo streaks
-* Complete memory CRUD
-* Memory ownership enforcement
-* Memory likes
-* Memory comments
-* Comment ownership and authorization
-* Interaction counts
-* Current-user like state
-
-Browser-specific storage is intentionally limited to:
-
-* Frontend Echo cycle notification/reminder state
-* Locally stored image files
-
-Real backend authentication has been implemented, including registration, login, session restoration, protected routes, password hashing, JWT validation, and logout.
-
-Memory persistence has been fully migrated to the backend. Memory creation, retrieval, updates, and deletion now use Redux async thunks, centralized API requests, authenticated backend endpoints, and MySQL as the persistent source of truth.
-
-Memory ownership is enforced by the backend for update and deletion operations, while Redux is updated only after successful backend operations.
-
-Persistent social interactions have also been implemented, including likes, unlike functionality, comments, comment editing and deletion, ownership enforcement, interaction counts, current-user like state, and loading/error handling.
-
-Social interaction data persists in MySQL and remains available across page refreshes and new authenticated sessions.
-
-Cloud image storage, Spotify integration, additional social functionality, and the mobile application remain planned for future iterations.
+* Spotify API integration
+* Friends and expanded social interactions
+* Personal music statistics
+* Yearly *Sound Journey* recap
+* React Native mobile application
 
 ---
 
