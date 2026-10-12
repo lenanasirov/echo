@@ -8,6 +8,7 @@ import userRoutes from "./routes/userRoutes.js";
 import memoryRoutes from "./routes/memoryRoutes.js";
 import echoCycleRoutes from "./routes/echoCycleRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import spotifyRoutes from "./routes/spotifyRoutes.js";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 
@@ -55,6 +56,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/memories", memoryRoutes);
 app.use("/api/echo-cycles", echoCycleRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/spotify", spotifyRoutes);
 
 // Error handling
 app.use(errorHandler);

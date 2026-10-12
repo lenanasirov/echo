@@ -79,9 +79,10 @@ export async function patchMemory(req, res, next) {
         const { memoryId } = req.params;
 
         const {
-            songId,
+            spotifyTrackId,
             songTitle,
             songArtist,
+            songAlbumArtUrl,
             mood,
             caption
         } = req.body;
@@ -101,9 +102,10 @@ export async function patchMemory(req, res, next) {
         const result = await updateMemory({
             memoryId,
             userId: req.user.id,
-            songId,
+            spotifyTrackId,
             songTitle,
             songArtist,
+            songAlbumArtUrl,
             mood,
             caption,
             imageUrl,

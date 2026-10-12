@@ -16,13 +16,14 @@ function mapMemoryFromApi(memory) {
             avatar: memory.user_avatar
         },
 
-        song: memory.song_id
-            ? {
-                id: memory.song_id,
-                title: memory.song_title,
-                artist: memory.song_artist
-            }
-            : null,
+        song: memory.song_title || memory.song_artist || memory.spotify_track_id
+        ? {
+            id: memory.spotify_track_id ?? null,
+            title: memory.song_title,
+            artist: memory.song_artist,
+            albumArtUrl: memory.song_album_art_url ?? null
+        }
+        : null,
 
         mood: memory.mood,
         caption: memory.caption,
@@ -145,15 +146,14 @@ export async function createMemory(memoryData) {
     formData.append("id", memoryData.id);
     formData.append("cycleId", memoryData.cycleId);
 
-    // if(memoryData.user?.id != null){
-    //     formData.append("userId", memoryData.user.id);
-    // }
-
-    if(memoryData.song?.id != null){
-        formData.append("songId", memoryData.song.id);
+    if (memoryData.song?.id != null) {
+        formData.append("spotifyTrackId", memoryData.song.id);
     }
+
     formData.append("songTitle", memoryData.song?.title ?? "");
     formData.append("songArtist", memoryData.song?.artist ?? "");
+    formData.append("songAlbumArtUrl", memoryData.song?.albumArtUrl ?? "");
+
     formData.append("mood", memoryData.mood ?? "");
     formData.append("caption", memoryData.caption ?? "");
     formData.append("location", memoryData.location ?? "");
@@ -171,13 +171,16 @@ export async function createMemory(memoryData) {
 export async function updateMemory(memoryId, memoryData) {
     const formData = new FormData();
 
-    if(memoryData.song?.id != null){
-        formData.append("songId", memoryData.song.id);
+    if (memoryData.song?.id != null) {
+        formData.append("spotifyTrackId", memoryData.song.id);
     } else {
-        formData.append("songId", "");
+        formData.append("spotifyTrackId", "");
     }
+
     formData.append("songTitle", memoryData.song?.title ?? "");
     formData.append("songArtist", memoryData.song?.artist ?? "");
+    formData.append("songAlbumArtUrl", memoryData.song?.albumArtUrl ?? "");
+    
     formData.append("mood", memoryData.mood ?? "");
     formData.append("caption", memoryData.caption ?? "");
 

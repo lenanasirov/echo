@@ -62,9 +62,10 @@ CREATE TABLE memories (
     user_id BIGINT UNSIGNED NOT NULL,
     cycle_id VARCHAR(100) NOT NULL,
 
-    song_id BIGINT UNSIGNED NULL,
+    spotify_track_id VARCHAR(100) NULL,
     song_title VARCHAR(255) NULL,
     song_artist VARCHAR(255) NULL,
+    song_album_art_url VARCHAR(500) NULL,
 
     mood VARCHAR(100) NULL,
     caption TEXT NULL,
