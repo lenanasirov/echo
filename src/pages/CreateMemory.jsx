@@ -10,6 +10,8 @@ import { useAuth } from "../hooks/useAuth";
 
 import MemoryForm from "../components/memory/MemoryForm";
 
+import useSpotifyPlayer from "../components/spotify/useSpotifyPlayer";
+
 function CreateMemory() {
     const dispatch = useDispatch();
 
@@ -22,6 +24,8 @@ function CreateMemory() {
     const { cycle } = useSelector(
         (state) => state.echoCycle
     );
+
+    const { pause } = useSpotifyPlayer();
 
     const handleCreate = async ({
         imageFile,
@@ -61,6 +65,13 @@ function CreateMemory() {
         };
 
         await dispatch(createMemory(newMemory)).unwrap();
+
+        try {
+            await pause();
+        } catch (error) {
+            console.error("Failed to pause Spotify playback:", error);
+        }
+        
         updateStreak(cycle);
         navigate("/feed");
     };

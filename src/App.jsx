@@ -17,7 +17,7 @@ import EditProfile from "./pages/EditProfile";
 import useEchoCycle from "./hooks/useEchoCycle";
 import useEchoNotification from "./hooks/useEchoNotification";
 import EchoNotification from "./components/echo/EchoNotification";
-
+import SpotifyCallback from "./pages/SpotifyCallback";
 
 function App() {
   useEchoCycle();
@@ -36,9 +36,10 @@ function App() {
           )}
 
           <Routes>
-            {/* Landing */}
+
             <Route element={<LandingLayout />}>
               <Route path="/" element={<Home />} />
+              <Route path="/spotify/callback" element={<SpotifyCallback />} />
             </Route>
 
             {/* Protected App */}

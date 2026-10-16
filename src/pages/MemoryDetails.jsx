@@ -1,24 +1,23 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { isMemoryOwner } from "../utils/memoryUtils";
 import { useAuth } from "../hooks/useAuth";
-import { 
-    deleteMemory, 
+import {
+    deleteMemory,
     fetchMemories,
-    likeMemory, 
+    likeMemory,
     unlikeMemory,
     selectLikeLoading
 } from "../store/slices/memoriesSlice";
 import { canViewMemory, canEditMemory } from "../utils/memoryAccess";
 import useImage from "../hooks/useImage";
+import useSpotifyPlayer from "../components/spotify/useSpotifyPlayer";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
-import formatRelativeTime from "../utils/formatRelativeTime";   
+import formatRelativeTime from "../utils/formatRelativeTime";
 
 import {
     FiHeart,
@@ -26,9 +25,11 @@ import {
     FiMapPin,
     FiArrowLeft,
     FiEdit2,
-    FiTrash2
+    FiTrash2,
+    FiMusic,
+    FiPlay,
+    FiPause,
 } from "react-icons/fi";
-
 
 function MemoryDetails() {
     const { user, isLoading: isAuthLoading } = useAuth();
@@ -37,15 +38,28 @@ function MemoryDetails() {
         (state) => state.memories
     );
 
-    const { cycle, status: cycleStatus } = useSelector((state) => state.echoCycle);
-    
+    const { cycle, status: cycleStatus } = useSelector(
+        (state) => state.echoCycle
+    );
+
     const navigate = useNavigate();
     const dispatch = useDispatch();
-
     const { id } = useParams();
 
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Spotify playback
+    const {
+        playerState,
+        isReady,
+        playTrack,
+        pause,
+        resume,
+    } = useSpotifyPlayer();
+
+    const [isPlaybackLoading, setIsPlaybackLoading] = useState(false);
+    const [playbackError, setPlaybackError] = useState("");
 
     useEffect(() => {
         if (status === "idle") {
@@ -53,43 +67,94 @@ function MemoryDetails() {
         }
     }, [status, dispatch]);
 
-    // find the memory with the given id
+    // Find the memory with the given ID
     const memory = memories.find(
         (memory) => memory.id === Number(id)
     );
 
-    // check if the memory is owned by the user
-    const isOwner = isMemoryOwner(memory, user);  
+    // Check if the memory is owned by the user
+    const isOwner = isMemoryOwner(memory, user);
 
-    const currentCycleMemories = memories.filter(memory => memory.cycleId === cycle?.id);
+    const currentCycleMemories = memories.filter(
+        (memory) => memory.cycleId === cycle?.id
+    );
 
-    const hasCurrentUserPosted = currentCycleMemories.some(memory => memory.user.id === user?.id);
+    const hasCurrentUserPosted = currentCycleMemories.some(
+        (memory) => memory.user.id === user?.id
+    );
 
-    const canView = canViewMemory(memory, user, cycle, hasCurrentUserPosted);
+    const canView = canViewMemory(
+        memory,
+        user,
+        cycle,
+        hasCurrentUserPosted
+    );
 
     const canEdit = canEditMemory(memory, user, cycle);
 
     const { imageUrl, isLoading } = useImage(memory?.image);
 
-    // check if the user has liked this memory  
+    // Check if the user has liked this memory
     const liked = memory?.likedByCurrentUser;
 
     const isLikeLoading = useSelector(
         (state) => selectLikeLoading(state, memory?.id)
     );
 
+    // Determine whether this memory's song is playing
+    const currentTrackId =
+        playerState?.track_window?.current_track?.id;
+
+    const isCurrentTrack =
+        Boolean(memory?.song?.id) &&
+        String(currentTrackId) === String(memory.song.id);
+
+    const isPlaying = Boolean(
+        playerState && !playerState.paused
+    );
+
+    const handlePlaybackClick = async (event) => {
+        event.stopPropagation();
+
+        if (!isReady || !memory?.song?.id || isPlaybackLoading) {
+            return;
+        }
+
+        setIsPlaybackLoading(true);
+        setPlaybackError("");
+
+        try {
+            if (isCurrentTrack) {
+                if (isPlaying) {
+                    await pause();
+                } else {
+                    await resume();
+                }
+            } else {
+                await playTrack(memory.song.id);
+            }
+        } catch (error) {
+            console.error("Failed to control Spotify playback:", error);
+            setPlaybackError(
+                "Playback couldn't start. Please try again."
+            );
+        } finally {
+            setIsPlaybackLoading(false);
+        }
+    };
+
     const scrollToComments = () => {
         const commentInput = document.getElementById("comment-input");
-    
+
         if (!commentInput) {
             return;
         }
-    
+
         commentInput.scrollIntoView({
             behavior: "smooth",
             block: "center"
         });
-    
+
         commentInput.focus();
     };
 
@@ -98,11 +163,11 @@ function MemoryDetails() {
         if (!memory || window.location.hash !== "#comment-input") {
             return;
         }
-    
+
         const timeout = setTimeout(() => {
             scrollToComments();
         }, 200);
-    
+
         return () => clearTimeout(timeout);
     }, [memory]);
 
@@ -111,13 +176,12 @@ function MemoryDetails() {
             return;
         }
 
-        if(memory.likedByCurrentUser) {
+        if (memory.likedByCurrentUser) {
             dispatch(unlikeMemory(memory.id));
         } else {
             dispatch(likeMemory(memory.id));
-        }   
+        }
     };
-
 
     const handleDelete = async () => {
         if (!isOwner || isDeleting) {
@@ -128,7 +192,6 @@ function MemoryDetails() {
 
         try {
             await dispatch(deleteMemory(memory.id)).unwrap();
-
             navigate(-1);
         } catch (error) {
             console.error("Failed to delete memory:", error);
@@ -138,37 +201,19 @@ function MemoryDetails() {
 
     if (status === "loading") {
         return (
-            <div
-                className="
-                    mx-auto
-                    max-w-4xl
-                    px-6
-                    py-16
-                    text-center
-                    text-zinc-400
-                "
-            >
+            <div className="mx-auto max-w-4xl px-6 py-16 text-center text-zinc-400">
                 Loading memory...
             </div>
         );
     }
-    
-    if(!memory){
+
+    if (!memory) {
         if (isDeleting) {
             return null;
         }
 
-        return(
-            <div
-                className="
-                    flex
-                    min-h-[70vh]
-                    items-center
-                    justify-center
-                    px-6
-                    text-center
-                "
-            >
+        return (
+            <div className="flex min-h-[70vh] items-center justify-center px-6 text-center">
                 <div>
                     <h1 className="text-3xl font-bold text-white">
                         Memory not found
@@ -184,9 +229,8 @@ function MemoryDetails() {
                         </Button>
                     </Link>
                 </div>
-
             </div>
-        )
+        );
     }
 
     if (
@@ -207,16 +251,7 @@ function MemoryDetails() {
             memory.cycleId === cycle?.id;
 
         return (
-            <div
-                className="
-                    flex
-                    min-h-[70vh]
-                    items-center
-                    justify-center
-                    px-6
-                    text-center
-                "
-            >
+            <div className="flex min-h-[70vh] items-center justify-center px-6 text-center">
                 <div className="max-w-md">
                     <h1 className="text-3xl font-bold">
                         {isOtherUserCurrentCycleMemory
@@ -252,98 +287,43 @@ function MemoryDetails() {
 
     if (isLoading) {
         return (
-            <div
-                className="
-                    mx-auto
-                    max-w-4xl
-                    px-6
-                    py-16
-                    text-center
-                    text-zinc-400
-                "
-            >
+            <div className="mx-auto max-w-4xl px-6 py-16 text-center text-zinc-400">
                 Loading memory...
             </div>
         );
     }
 
-    return(
+    return (
         <motion.div
             initial={{
-                opacity:0,
-                y:20
+                opacity: 0,
+                y: 20
             }}
             animate={{
-                opacity:1,
-                y:0
+                opacity: 1,
+                y: 0
             }}
-            className="
-                mx-auto
-                max-w-4xl
-                px-6
-                py-10
-                lg:px-8
-            "
+            className="mx-auto max-w-4xl px-6 py-10 lg:px-8"
         >
             {/* Back button */}
             <button
                 onClick={() => navigate(-1)}
-                className="
-                    mb-8
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-full
-                    border
-                    border-white/10
-                    bg-white/5
-                    px-4
-                    py-2
-                    text-sm
-                    text-zinc-400
-                    transition
-                    hover:border-purple-500
-                    hover:text-white
-                "
+                className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition hover:border-purple-500 hover:text-white"
             >
                 <FiArrowLeft className="text-lg" />
                 Back
             </button>
 
             {/* Image */}
-            <div
-                className="
-                    overflow-hidden
-                    rounded-3xl
-                    border
-                    border-white/10
-                "
-            >
-                {imageUrl? (
+            <div className="overflow-hidden rounded-3xl border border-white/10">
+                {imageUrl ? (
                     <img
                         src={imageUrl}
                         alt={memory.caption}
-                        className="
-                            aspect-video
-                            w-full
-                            object-cover
-                            transition
-                            duration-500
-                            hover:scale-[1.02]
-                        "
+                        className="aspect-video w-full object-cover transition duration-500 hover:scale-[1.02]"
                     />
                 ) : (
-                    <div
-                        className="
-                            flex
-                            aspect-video
-                            w-full
-                            items-center
-                            justify-center
-                            bg-white/5
-                            text-zinc-500
-                        "
-                    >
+                    <div className="flex aspect-video w-full items-center justify-center bg-white/5 text-zinc-500">
                         <div className="text-center">
                             <div className="text-4xl">📷</div>
                             <p className="mt-3">
@@ -352,140 +332,54 @@ function MemoryDetails() {
                         </div>
                     </div>
                 )}
-
             </div>
 
             {/* User */}
-            <div
-                className="
-                    mt-8
-                    flex
-                    items-center
-                    justify-between
-                "
-            >
-
-                <div
-                    className="
-                        flex
-                        items-center
-                        gap-4
-                    "
-                >
-
-                    <div
-                        className="
-                            flex
-                            h-12
-                            w-12
-                            items-center
-                            justify-center
-                            rounded-full
-                            bg-linear-to-r
-                            from-purple-500
-                            to-pink-500
-                            text-2xl
-                        "
-                    >
+            <div className="mt-8 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-r from-purple-500 to-pink-500 text-2xl">
                         {memory.user.avatar}
                     </div>
 
                     <div>
-
-                        <h2
-                            className="
-                                text-xl
-                                font-semibold
-                            "
-                        >
+                        <h2 className="text-xl font-semibold">
                             {memory.user.name}
                         </h2>
 
-                        <p
-                            className="
-                                text-sm
-                                text-zinc-500
-                            "
-                        >
+                        <p className="text-sm text-zinc-500">
                             {formatRelativeTime(memory.createdAt)}
                         </p>
-
                     </div>
-
                 </div>
 
-                {/* Edit button */}
+                {/* Edit and Delete buttons */}
                 {isOwner && (
                     <div className="flex items-center gap-3">
-
-                        {/* Edit */}
                         {canEdit && (
                             <button
                                 onClick={() => navigate(`/memory/${memory.id}/edit`)}
-                                className="
-                                    flex
-                                    items-center
-                                    gap-2
-                                    rounded-full
-                                    border
-                                    border-white/10
-                                    bg-white/5
-                                    px-4
-                                    py-2
-                                    text-sm
-                                    text-zinc-400
-                                    transition
-                                    hover:border-purple-500
-                                    hover:text-white
-                                "
+                                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition hover:border-purple-500 hover:text-white"
                             >
                                 <FiEdit2 />
                                 Edit
                             </button>
-                        )}   
+                        )}
 
-                        {/* Delete */ }
                         <button
                             onClick={() => setShowDeleteConfirmation(true)}
                             disabled={isDeleting}
-                            className="
-                                flex
-                                items-center
-                                gap-2
-                                rounded-full
-                                border
-                                border-white/10
-                                bg-white/5
-                                px-4
-                                py-2
-                                text-sm
-                                text-zinc-400
-                                transition
-                                hover:border-red-500
-                                hover:text-red-400
-                            "
+                            className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400 transition hover:border-red-500 hover:text-red-400"
                         >
                             <FiTrash2 />
-                            Delete            
+                            Delete
                         </button>
-
                     </div>
                 )}
-
             </div>
 
             {/* Delete confirmation */}
             {showDeleteConfirmation && (
-                <div
-                    className="
-                        mt-6
-                        rounded-2xl
-                        border
-                        border-red-500/20
-                        bg-red-500/5
-                        p-5
-                    "
-                >
+                <div className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/5 p-5">
                     <h3 className="font-semibold text-white">
                         Delete this memory?
                     </h3>
@@ -496,227 +390,142 @@ function MemoryDetails() {
                     </p>
 
                     <div className="mt-5 flex gap-3">
-
-                        {/* Cancel */}
                         <button
                             onClick={() => setShowDeleteConfirmation(false)}
                             disabled={isDeleting}
-                            className="
-                                rounded-full
-                                border
-                                border-white/10
-                                bg-white/5
-                                px-4
-                                py-2
-                                text-sm
-                                text-zinc-300
-                                transition
-                                hover:border-white/20
-                                hover:text-white
-                            "
+                            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white"
                         >
                             Cancel
                         </button>
 
-                        {/* Confirm delete */}
                         <button
                             onClick={handleDelete}
                             disabled={isDeleting}
-                            className="
-                                rounded-full
-                                bg-red-500
-                                px-4
-                                py-2
-                                text-sm
-                                font-medium
-                                text-white
-                                transition
-                                hover:bg-red-600
-                                disabled:cursor-not-allowed
-                                disabled:opacity-50
-                            "
+                            className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {isDeleting ? "Deleting..." : "Delete Memory"}
                         </button>
-
                     </div>
                 </div>
             )}
 
             {/* Caption */}
             <div className="mt-10">
-                <p
-                    className="
-                        text-2xl
-                        font-medium
-                        leading-relaxed
-                        tracking-tight
-                        text-white
-                    "
-                >
+                <p className="wrap-break-word text-2xl font-medium leading-relaxed tracking-tight text-white">
                     "{memory.caption}"
                 </p>
-            </div>          
+            </div>
 
             {/* Song */}
-            <div
-                className="
-                    mt-8
-                    rounded-2xl
-                    border
-                    border-white/10
-                    bg-linear-to-br
-                    from-purple-500/10
-                    to-pink-500/5
-                    p-6
-                "
-            >
-
-                <p
-                    className="
-                        text-xs
-                        font-medium
-                        uppercase
-                        tracking-[0.25em]
-                        text-purple-300
-                    "
-                >
+            <div className="mt-8 rounded-2xl border border-white/10 bg-linear-to-br from-purple-500/10 to-pink-500/5 p-6">
+                <p className="text-xs font-medium uppercase tracking-[0.25em] text-purple-300">
                     Soundtrack
                 </p>
 
+                <div className="mt-4 flex items-center gap-4 sm:gap-5">
+                    {memory.song?.albumArtUrl ? (
+                        <img
+                            src={memory.song.albumArtUrl}
+                            alt=""
+                            className="h-20 w-20 shrink-0 rounded-xl object-cover sm:h-28 sm:w-28"
+                        />
+                    ) : (
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-400 sm:h-28 sm:w-28">
+                            <FiMusic size={36} />
+                        </div>
+                    )}
 
-                <h3
-                    className="
-                        mt-3
-                        text-2xl
-                        font-semibold
-                        text-white
-                    "
-                >
-                    🎵 {memory.song?.title}
-                </h3>
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
+                        <div className="min-w-0 flex-1">
+                            <h3 className="wrap-break-word text-xl font-semibold text-white sm:text-2xl">
+                                {memory.song?.title}
+                            </h3>
 
+                            <p className="mt-2 wrap-break-word text-zinc-400">
+                                {memory.song?.artist}
+                            </p>
+                        </div>
 
-                <p
-                    className="
-                        mt-1
-                        text-zinc-400
-                    "
-                >
-                    {memory.song?.artist}
-                </p>
+                        {memory.song?.id && (
+                            <button
+                                type="button"
+                                onClick={handlePlaybackClick}
+                                disabled={!isReady || isPlaybackLoading}
+                                aria-label={
+                                    isPlaybackLoading
+                                        ? "Loading Spotify playback"
+                                        : isCurrentTrack && isPlaying
+                                            ? "Pause song"
+                                            : isCurrentTrack
+                                                ? "Resume song"
+                                                : "Play song"
+                                }
+                                title={
+                                    !isReady
+                                        ? "Spotify player is not ready"
+                                        : isCurrentTrack && isPlaying
+                                            ? "Pause song"
+                                            : isCurrentTrack
+                                                ? "Resume song"
+                                                : "Play song"
+                                }
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-purple-400/30 bg-purple-500/10 text-purple-300 transition hover:border-purple-400/60 hover:bg-purple-500/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {isPlaybackLoading ? (
+                                    <span
+                                        className="h-4 w-4 animate-spin rounded-full border-2 border-purple-300/30 border-t-purple-300"
+                                        aria-hidden="true"
+                                    />
+                                ) : isCurrentTrack && isPlaying ? (
+                                    <FiPause size={18} />
+                                ) : (
+                                    <FiPlay size={18} className="ml-0.5" />
+                                )}
+                            </button>
+                        )}
+                    </div>
+                </div>
 
+                {playbackError && (
+                    <p className="mt-3 text-sm text-red-400" role="status">
+                        {playbackError}
+                    </p>
+                )}
             </div>
 
             {/* Extra information */}
-            <div
-                className="
-                    mt-8
-                    flex
-                    flex-wrap
-                    gap-3
-                "
-            >
-                <span
-                    className="
-                        rounded-full
-                        border
-                        border-purple-500/20
-                        bg-purple-500/10
-                        px-4
-                        py-2
-                        text-sm
-                        text-purple-300
-                    "
-                >
+            <div className="mt-8 flex flex-wrap gap-3">
+                <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-4 py-2 text-sm text-purple-300">
                     {memory.mood}
                 </span>
 
-                <span
-                    className="
-                        flex
-                        items-center
-                        gap-2
-                        rounded-full
-                        border
-                        border-white/10
-                        bg-white/5
-                        px-4
-                        py-2
-                        text-sm
-                        text-zinc-400
-                    "
-                >
+                <span className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-400">
                     <FiMapPin />
                     {memory.location}
                 </span>
-            </div>           
-
+            </div>
 
             {/* Actions */}
-            <div
-                className="
-                    mt-8
-                    flex
-                    items-center
-                    gap-3
-                    border-t
-                    border-white/10
-                    pt-5
-                "
-            >
-                
+            <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-5">
                 {/* Like */}
                 <button
                     type="button"
                     disabled={isLikeLoading}
                     onClick={handleLike}
                     aria-label={liked ? "Unlike memory" : "Like memory"}
-                    className="
-                        group
-                        flex
-                        items-center
-                        gap-2
-                        rounded-full
-                        px-2
-                        py-1.5
-                        text-sm
-                        text-zinc-400
-                        transition
-                        hover:bg-white/5
-                        hover:text-white
-                        focus:outline-none
-                        focus-visible:ring-2
-                        focus-visible:ring-purple-500/50
-                    "
+                    className="group flex items-center gap-2 rounded-full px-2 py-1.5 text-sm text-zinc-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
                 >
                     {isLikeLoading ? (
-                        <span
-                            className="
-                                h-4
-                                w-4
-                                animate-spin
-                                rounded-full
-                                border-2
-                                border-white/20
-                                border-t-purple-400
-                            "
-                        />
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-purple-400" />
                     ) : (
-                        <FiHeart 
-                            className={`
-                                text-lg
-                                transition
-                                duration-200
-                                group-hover:scale-110
-                                ${liked ? "fill-pink-500 text-pink-500" : ""}
-                            `}
+                        <FiHeart
+                            className={`text-lg transition duration-200 group-hover:scale-110 ${
+                                liked ? "fill-pink-500 text-pink-500" : ""
+                            }`}
                         />
                     )}
 
-                    <span>
-                        {memory.likes}
-                    </span>
+                    <span>{memory.likes}</span>
                 </button>
 
                 {/* Comments */}
@@ -724,49 +533,17 @@ function MemoryDetails() {
                     type="button"
                     onClick={scrollToComments}
                     aria-label={`View ${memory.commentCount ?? 0} comments`}
-                    className="
-                        group
-                        flex
-                        items-center
-                        gap-2
-                        rounded-full
-                        px-2
-                        py-1.5
-                        text-sm
-                        text-zinc-400
-                        transition
-                        hover:bg-white/5
-                        hover:text-white
-                        focus:outline-none
-                        focus-visible:ring-2
-                        focus-visible:ring-purple-500/50
-                    "
+                    className="group flex items-center gap-2 rounded-full px-2 py-1.5 text-sm text-zinc-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
                 >
-                    <FiMessageCircle
-                        className="
-                            text-lg
-                            transition
-                            duration-200
-                            group-hover:scale-110
-                        "
-                    />
+                    <FiMessageCircle className="text-lg transition duration-200 group-hover:scale-110" />
 
-                    <span>
-                        {memory.commentCount ?? 0}
-                    </span>
+                    <span>{memory.commentCount ?? 0}</span>
                 </button>
-
             </div>
 
-            <hr
-                className="
-                    my-8
-                    border-white/10
-                "
-            />
+            <hr className="my-8 border-white/10" />
 
             <CommentsSection memory={memory} />
-
         </motion.div>
     );
 }

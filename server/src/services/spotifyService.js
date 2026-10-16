@@ -112,7 +112,8 @@ export async function searchSpotifyTracks(query) {
                 .map((artist) => artist.name)
                 .join(", "),
             albumArtUrl: track.album?.images?.[0]?.url ?? null,
-            spotifyUrl: track.external_urls?.spotify ?? null
+            spotifyUrl: track.external_urls?.spotify ?? null,
+            previewUrl: track.preview_url ?? null
         }));
     }
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -6,9 +7,12 @@ import {
     FiMessageCircle,
     FiMapPin,
     FiMusic,
-    FiLock
+    FiLock,
+    FiPlay,
+    FiPause,
 } from "react-icons/fi";
 import formatRelativeTime from "../../utils/formatRelativeTime";
+import useSpotifyPlayer from "../spotify/useSpotifyPlayer";
 
 import { useAuth } from "../../hooks/useAuth";
 
@@ -26,10 +30,57 @@ function MemoryCard({ memory, isLocked = false }) {
 
     const { user } = useAuth();
     const { imageUrl, isLoading } = useImage(memory?.image);
+    const {
+        playerState,
+        isReady,
+        playTrack,
+        pause,
+        resume,
+      } = useSpotifyPlayer();
 
     const isLikeLoading = useSelector(
         (state) => selectLikeLoading(state, memory?.id)
     );
+
+    const [isPlaybackLoading, setIsPlaybackLoading] = useState(false);
+    const [playbackError, setPlaybackError] = useState("");
+
+    const currentTrackId =
+        playerState?.track_window?.current_track?.id;
+
+    const isCurrentTrack =
+        Boolean(memory.song?.id) &&
+        String(currentTrackId) === String(memory.song.id);
+
+    const isPlaying = Boolean(playerState && !playerState.paused);
+
+    const handlePlaybackClick = async (event) => {
+        event.stopPropagation();
+      
+        if (!isReady || !memory.song?.id || isPlaybackLoading) {
+          return;
+        }
+      
+        setIsPlaybackLoading(true);
+        setPlaybackError("");
+      
+        try {
+          if (isCurrentTrack) {
+            if (isPlaying) {
+              await pause();
+            } else {
+              await resume();
+            }
+          } else {
+            await playTrack(memory.song.id);
+          }
+        } catch (error) {
+          console.error("Failed to control Spotify playback:", error);
+          setPlaybackError("Playback couldn't start. Please try again.");
+        } finally {
+          setIsPlaybackLoading(false);
+        }
+    };
 
     const handleCardClick = () => {
         if (isLocked) {
@@ -322,45 +373,81 @@ function MemoryCard({ memory, isLocked = false }) {
             
                 {isLocked ? null :(
                     <div className="p-5 sm:p-6"> 
-
+                        
                         {/* Song */}
-                        <div>
-                            <p
-                                className="
-                                    text-xs
-                                    font-medium
-                                    uppercase
-                                    tracking-[0.2em]
-                                    text-zinc-600
-                                "
-                            >
+                        <div className="mt-2 flex min-w-0 items-center gap-4">
+                        {memory.song?.albumArtUrl ? (
+                            <img
+                            src={memory.song.albumArtUrl}
+                            alt=""
+                            className="h-18 w-18 shrink-0 rounded-xl object-cover sm:h-24 sm:w-24"
+                            />
+                        ) : (
+                            <div className="flex h-18 w-18 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-400">
+                            <FiMusic size={26} />
+                            </div>
+                        )}
+
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-purple-300/80">
                                 Soundtrack
                             </p>
 
-                            <h2
-                                className="
-                                    mt-2
-                                    text-2xl
-                                    font-semibold
-                                    text-white
-                                "
-                            >
+                            <h2 className="text-lg font-semibold leading-snug text-white sm:text-xl">
                                 {memory.song?.title}
                             </h2>
 
-                            <p
-                                className="
-                                    mt-1
-                                    flex
-                                    items-center
-                                    gap-2
-                                    text-sm
-                                    text-zinc-400
-                                "
-                            >
-                                <FiMusic size={15} />
-                                {memory.song?.artist}
+                            <p className="mt-1 flex min-w-0 items-center gap-2 text-sm text-zinc-400">
+                                <FiMusic size={14} className="shrink-0" />
+                                <span className="truncate">{memory.song?.artist}</span>
                             </p>
+                            </div>
+
+                            {memory.song?.id && (
+                            <button
+                                type="button"
+                                onClick={handlePlaybackClick}
+                                disabled={!isReady || isPlaybackLoading}
+                                aria-label={
+                                isPlaybackLoading
+                                    ? "Loading Spotify playback"
+                                    : isCurrentTrack && isPlaying
+                                    ? "Pause song"
+                                    : isCurrentTrack
+                                        ? "Resume song"
+                                        : "Play song"
+                                }
+                                title={
+                                !isReady
+                                    ? "Spotify player is not ready"
+                                    : isCurrentTrack && isPlaying
+                                    ? "Pause song"
+                                    : isCurrentTrack
+                                        ? "Resume song"
+                                        : "Play song"
+                                }
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-purple-400/30 bg-purple-500/10 text-purple-300 transition hover:border-purple-400/60 hover:bg-purple-500/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {isPlaybackLoading ? (
+                                <span
+                                    className="h-4 w-4 animate-spin rounded-full border-2 border-purple-300/30 border-t-purple-300"
+                                    aria-hidden="true"
+                                />
+                                ) : isCurrentTrack && isPlaying ? (
+                                <FiPause size={17} />
+                                ) : (
+                                <FiPlay size={17} className="ml-0.5" />
+                                )}
+                            </button>
+                            )}
+                        </div>
+
+                        {playbackError && (
+                            <p className="text-xs text-red-400" role="status">
+                            {playbackError}
+                            </p>
+                        )}
                         </div>
 
                         {/* Mood */}
@@ -386,6 +473,7 @@ function MemoryCard({ memory, isLocked = false }) {
                         <p
                             className="
                                 mt-5
+                                wrap-break-word
                                 text-sm
                                 leading-relaxed
                                 text-zinc-400

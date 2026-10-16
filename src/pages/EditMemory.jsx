@@ -9,6 +9,7 @@ import { useAuth } from "../hooks/useAuth";
 import useImage from "../hooks/useImage";
 import MemoryForm from "../components/memory/MemoryForm";
 import Button from "../components/common/Button";
+import useSpotifyPlayer from "../components/spotify/useSpotifyPlayer";
 
 function EditMemory(){
     const { id } = useParams();
@@ -24,6 +25,8 @@ function EditMemory(){
     const { cycle } = useSelector(
         (state) => state.echoCycle
     );
+
+    const { pause } = useSpotifyPlayer();
 
     useEffect(() => {
         if (status === "idle") {
@@ -174,6 +177,15 @@ function EditMemory(){
                     memoryData: updatedMemory
                 })
             ).unwrap();
+
+            try {
+                await pause();
+            } catch (pauseError) {
+                console.error(
+                    "Failed to pause Spotify playback:",
+                    pauseError
+                );
+            }
 
             navigate(-1);
         } catch (error) {
