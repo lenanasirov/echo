@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
     completeSpotifyAuthorization,
     startSpotifyAuthorization,
+    consumeSpotifyReturnTo,
+    getSpotifyReturnTo,
 } from "../services/spotifyAuthService";
 
 function SpotifyCallback() {
@@ -10,6 +12,8 @@ function SpotifyCallback() {
     const [status, setStatus] = useState("connecting");
     const [error, setError] = useState("");
     const startedRef = useRef(false);
+
+    const finishReturnTo = useRef(getSpotifyReturnTo());
 
     useEffect(() => {
         if (startedRef.current) {
@@ -43,7 +47,9 @@ function SpotifyCallback() {
 
             try {
                 await completeSpotifyAuthorization(code, state);
-                setStatus("success");
+
+                const destination = consumeSpotifyReturnTo();
+                window.location.replace(destination);
             } catch (err) {
                 setError(
                     err.message ||
@@ -58,7 +64,7 @@ function SpotifyCallback() {
 
     const handleReconnect = async () => {
         try {
-            await startSpotifyAuthorization();
+            await startSpotifyAuthorization(finishReturnTo.current);
         } catch (err) {
             setError(err.message || "Couldn't start Spotify authorization.");
             setStatus("error");
@@ -70,26 +76,14 @@ function SpotifyCallback() {
             <section className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-900 p-8 text-center">
                 <h1 className="text-2xl font-semibold">
                     {status === "connecting" && "Connecting Spotify..."}
-                    {status === "success" && "Spotify connected"}
                     {status === "error" && "Couldn't connect Spotify"}
                 </h1>
 
                 <p className="mt-3 text-sm text-zinc-400">
                     {status === "connecting" &&
                         "Finishing your Spotify authorization."}
-                    {status === "success" &&
-                        "Your account is authorized. You can return to Echo."}
                     {status === "error" && error}
                 </p>
-
-                {status === "success" && (
-                    <Link
-                        to="/feed"
-                        className="mt-6 inline-flex rounded-xl bg-linear-to-r from-purple-500 to-pink-500 px-5 py-3 font-medium text-white transition hover:opacity-90"
-                    >
-                        Return to Echo
-                    </Link>
-                )}
 
                 {status === "error" && (
                     <button

@@ -18,6 +18,8 @@ import useSpotifyPlayer from "../components/spotify/useSpotifyPlayer";
 import Button from "../components/common/Button";
 import CommentsSection from "../components/memory/CommentsSection";
 import formatRelativeTime from "../utils/formatRelativeTime";
+import SpotifyConnectModal from "../components/spotify/SpotifyConnectModal";
+import { savePendingSpotifyPlayback } from "../services/spotifyAuthService";
 
 import {
     FiHeart,
@@ -53,6 +55,8 @@ function MemoryDetails() {
     const {
         playerState,
         isReady,
+        isConnected,
+        connectSpotify,
         playTrack,
         pause,
         resume,
@@ -60,6 +64,8 @@ function MemoryDetails() {
 
     const [isPlaybackLoading, setIsPlaybackLoading] = useState(false);
     const [playbackError, setPlaybackError] = useState("");
+    const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+    const [pendingSong, setPendingSong] = useState(null);
 
     useEffect(() => {
         if (status === "idle") {
@@ -115,14 +121,24 @@ function MemoryDetails() {
 
     const handlePlaybackClick = async (event) => {
         event.stopPropagation();
-
-        if (!isReady || !memory?.song?.id || isPlaybackLoading) {
+    
+        if (!memory?.song?.id || isPlaybackLoading) {
             return;
         }
-
+    
+        if (!isConnected) {
+            setPendingSong(memory.song);
+            setIsConnectModalOpen(true);
+            return;
+        }
+    
+        if (!isReady) {
+            return;
+        }
+    
         setIsPlaybackLoading(true);
         setPlaybackError("");
-
+    
         try {
             if (isCurrentTrack) {
                 if (isPlaying) {
@@ -141,6 +157,15 @@ function MemoryDetails() {
         } finally {
             setIsPlaybackLoading(false);
         }
+    };
+
+    const handleConnectSpotify = async () => {
+        if (!pendingSong?.id) {
+            return;
+        }
+    
+        savePendingSpotifyPlayback({ id: pendingSong.id });
+        await connectSpotify();
     };
 
     const scrollToComments = () => {
@@ -450,7 +475,7 @@ function MemoryDetails() {
                             <button
                                 type="button"
                                 onClick={handlePlaybackClick}
-                                disabled={!isReady || isPlaybackLoading}
+                                disabled={(isConnected && !isReady) || isPlaybackLoading}
                                 aria-label={
                                     isPlaybackLoading
                                         ? "Loading Spotify playback"
@@ -544,6 +569,13 @@ function MemoryDetails() {
             <hr className="my-8 border-white/10" />
 
             <CommentsSection memory={memory} />
+
+            <SpotifyConnectModal
+                isOpen={isConnectModalOpen}
+                onClose={() => setIsConnectModalOpen(false)}
+                song={pendingSong}
+                onConnect={handleConnectSpotify}
+            />
         </motion.div>
     );
 }

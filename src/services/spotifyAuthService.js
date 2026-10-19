@@ -17,6 +17,8 @@ const STORAGE_KEYS = {
     accessToken: "spotify_access_token",
     refreshToken: "spotify_refresh_token",
     expiresAt: "spotify_token_expires_at",
+    returnTo: "spotify_return_to",
+    pendingPlayback: "spotify_pending_playback",
 };
 
 const getClientId = () => {
@@ -103,7 +105,14 @@ const requestTokens = async (body) => {
     return data;
 };
 
-export const startSpotifyAuthorization = async () => {
+export const startSpotifyAuthorization = async (
+    returnTo = window.location.pathname
+) => {
+    sessionStorage.setItem(
+        STORAGE_KEYS.returnTo,
+        getSafeReturnTo(returnTo)
+    );
+
     const clientId = getClientId();
     const verifier = generateRandomString();
     const challenge = await generateCodeChallenge(verifier);
@@ -211,4 +220,57 @@ export const isSpotifyConnected = () => {
 
 export const disconnectSpotify = () => {
     clearTokens();
+};
+
+const getSafeReturnTo = (path) => {
+    if (
+        typeof path !== "string" ||
+        !path.startsWith("/") ||
+        path.startsWith("//")
+    ) {
+        return "/feed";
+    }
+
+    return path;
+};
+
+export const getSpotifyReturnTo = () => {
+    return getSafeReturnTo(
+        sessionStorage.getItem(STORAGE_KEYS.returnTo)
+    );
+};
+
+export const consumeSpotifyReturnTo = () => {
+    const returnTo = getSpotifyReturnTo();
+    sessionStorage.removeItem(STORAGE_KEYS.returnTo);
+    return returnTo;
+};
+
+export const savePendingSpotifyPlayback = (track) => {
+    sessionStorage.setItem(
+        STORAGE_KEYS.pendingPlayback,
+        JSON.stringify(track)
+    );
+};
+
+export const consumePendingSpotifyPlayback = () => {
+    const storedPlayback = sessionStorage.getItem(
+        STORAGE_KEYS.pendingPlayback
+    );
+
+    sessionStorage.removeItem(STORAGE_KEYS.pendingPlayback);
+
+    if (!storedPlayback) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(storedPlayback);
+    } catch {
+        return null;
+    }
+};
+
+export const clearPendingSpotifyPlayback = () => {
+    sessionStorage.removeItem(STORAGE_KEYS.pendingPlayback);
 };

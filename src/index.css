@@ -16,3 +16,37 @@ body {
   background: #0B0B10;
 }
 
+
+/* Echo scrollbar */
+.echo-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #7c3aed #18181b;
+}
+
+/* Chrome, Edge, and Safari */
+.echo-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.echo-scrollbar::-webkit-scrollbar-track {
+  background: #18181b;
+  border-radius: 999px;
+}
+
+.echo-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+      180deg,
+      #a855f7 0%,
+      #ec4899 100%
+  );
+  border-radius: 999px;
+}
+
+.echo-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+      180deg,
+      #c084fc 0%,
+      #f472b6 100%
+  );
+}
+
