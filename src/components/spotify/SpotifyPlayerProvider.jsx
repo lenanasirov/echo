@@ -130,7 +130,7 @@ export function SpotifyPlayerProvider({ children }) {
 
                         setIsReady(false);
                         setDeviceId(null);
-                        setStatus("disconnected");
+                        setStatus("connecting");
                     },
                     onStateChange: (state) => {
                         console.info(
@@ -204,18 +204,20 @@ export function SpotifyPlayerProvider({ children }) {
         const previousRoute = previousPathname.current;
         previousPathname.current = location.pathname;
     
+        if (!isConnected || !isReady) return;
+
         console.info("[Echo Spotify] Route changed; stopping playback.", {
             previousRoute,
             currentRoute: location.pathname,
         });
-    
+
         pauseSpotifyPlayback().catch((error) => {
             console.error(
                 "[Echo Spotify] Failed to stop playback after route change.",
                 error
             );
         });
-    }, [location.pathname]);
+    }, [location.pathname, isConnected, isReady]);
 
     const resume = useCallback(async () => {
         console.info("[Echo Spotify] Provider resume called.");

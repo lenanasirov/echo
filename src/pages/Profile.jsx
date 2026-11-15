@@ -34,12 +34,14 @@ function Profile() {
 
   const {
     isConnected,
+    status: spotifyStatus,
     connectSpotify,
     disconnect,
   } = useContext(SpotifyPlayerContext);
 
   const [spotifyActionError, setSpotifyActionError] = useState("");
   const [isSpotifyActionPending, setIsSpotifyActionPending] = useState(false);
+  const isSpotifyRestoring = !isConnected && spotifyStatus === "connecting";
 
   const handleSpotifyConnect = async () => {
       setSpotifyActionError("");
@@ -276,7 +278,7 @@ function Profile() {
                       <button
                           type="button"
                           onClick={handleSpotifyConnect}
-                          disabled={isSpotifyActionPending}
+                          disabled={isSpotifyActionPending || isSpotifyRestoring}
                           className="
                               flex
                               items-center
@@ -297,9 +299,11 @@ function Profile() {
                           "
                       >
                           <SpotifyIcon />
-                          {isSpotifyActionPending
-                              ? "Connecting..."
-                              : "Connect to Spotify"}
+                          {isSpotifyRestoring
+                              ? "Checking Spotify..."
+                              : isSpotifyActionPending
+                                  ? "Connecting..."
+                                  : "Connect to Spotify"}
                       </button>
                   )}
               </div>

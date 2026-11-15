@@ -1,4 +1,5 @@
 import { getSpotifyAccessToken } from "./spotifyAuthService";
+import { pauseEchoDevice } from "./spotifyPauseCoordinator";
 
 const SPOTIFY_SDK_URL = "https://sdk.scdn.co/spotify-player.js";
 
@@ -11,6 +12,7 @@ let playerGeneration = null;
 let lifecycleGeneration = 0;
 let activeCallbacks = {};
 let deviceRecoveryPromise = null;
+let playbackCommandVersion = 0;
 
 const logSpotify = (...args) => {
     console.info("[Echo Spotify]", ...args);
@@ -98,10 +100,15 @@ const logSpotifyWebPlayback = async (label) => {
 };
 
 const schedulePlaybackDiagnostics = (label, delays = [500, 2500]) => {
+    const targetGeneration = lifecycleGeneration;
+    const targetPlayer = player;
     for (const delay of delays) {
         setTimeout(() => {
-            logCurrentSdkState(`${label} (+${delay}ms)`);
-            logSpotifyWebPlayback(`${label} (+${delay}ms)`);
+            // Do not request Spotify tokens or emit diagnostics after logout,
+            // explicit disconnect, or SDK replacement.
+            if (targetGeneration !== lifecycleGeneration || player !== targetPlayer) return;
+            void logCurrentSdkState(`${label} (+${delay}ms)`);
+            void logSpotifyWebPlayback(`${label} (+${delay}ms)`);
         }, delay);
     }
 };
@@ -212,6 +219,9 @@ export const initializeSpotifyPlayer = async (callbacks = {}) => {
                 try {
                     const accessToken = await getSpotifyAccessToken();
 
+                    // A token request may complete after logout or SDK teardown.
+                    // Never hand that token to a player from a previous session.
+                    if (!isCurrentPlayer(newPlayer, generation)) return;
                     logSpotify("Access token retrieved for SDK.");
                     callback(accessToken);
                 } catch (error) {
@@ -466,6 +476,7 @@ export const disconnectSpotifyPlayer = () => {
 
     // Invalidate in-flight initialization and events from the old player.
     lifecycleGeneration += 1;
+    playbackCommandVersion += 1;
 
     const playerToDisconnect = player;
 
@@ -487,6 +498,7 @@ export const disconnectSpotifyPlayer = () => {
 };
 
 export const playSpotifyTrack = async (trackId, recoveryAttempt = 0) => {
+    const commandVersion = ++playbackCommandVersion;
     const targetDeviceId = deviceId;
 
     logSpotify("Track playback requested.", {
@@ -554,7 +566,8 @@ export const playSpotifyTrack = async (trackId, recoveryAttempt = 0) => {
         if (
             player !== playbackPlayer ||
             lifecycleGeneration !== playbackGeneration ||
-            deviceId !== targetDeviceId
+            deviceId !== targetDeviceId ||
+            playbackCommandVersion !== commandVersion
         ) {
             throw new Error(
                 "Echo's Spotify player changed. Please try playing the song again."
@@ -651,6 +664,8 @@ export const playSpotifyTrack = async (trackId, recoveryAttempt = 0) => {
         ok: transferResponse.ok,
     });
 
+    assertCurrentPlaybackDevice();
+
     // A second 404 after discovery/retry means the current local SDK device
     // is unusable. Rebuild it once, await its ready event, and retry the song.
     if (transferResponse.status === 404 && recoveryAttempt === 0) {
@@ -676,6 +691,7 @@ export const playSpotifyTrack = async (trackId, recoveryAttempt = 0) => {
         );
     }
 
+    assertCurrentPlaybackDevice();
     logSpotify("Requesting track playback.", {
         trackId,
         deviceId: targetDeviceId,
@@ -727,32 +743,28 @@ export const playSpotifyTrack = async (trackId, recoveryAttempt = 0) => {
 
 
 export const pauseSpotifyPlayback = async () => {
-    logSpotify("Pause requested via Spotify SDK.", {
-        hasPlayer: Boolean(player),
-        deviceId,
+    const targetPlayer = player;
+    const targetDeviceId = deviceId;
+    const targetGeneration = lifecycleGeneration;
+    const commandVersion = ++playbackCommandVersion;
+
+    logSpotify("Pause requested.", { hasPlayer: Boolean(targetPlayer), deviceId: targetDeviceId });
+    const outcome = await pauseEchoDevice({
+        player: targetPlayer,
+        deviceId: targetDeviceId,
+        getAccessToken: getSpotifyAccessToken,
+        isCurrent: () => (
+            player === targetPlayer &&
+            deviceId === targetDeviceId &&
+            lifecycleGeneration === targetGeneration &&
+            playbackCommandVersion === commandVersion
+        )
     });
-
-    if (!player) {
-        throw new Error("Spotify player is not initialized.");
-    }
-
-    if (!deviceId) {
-        throw new Error("Spotify player device is not ready.");
-    }
-
-    await player.pause();
-
-    logSpotify("SDK pause command completed.");
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    await logSpotifyWebPlayback("Pause verification");
-
-    schedulePlaybackDiagnostics("After Pause", [500, 1500]);
+    logSpotify("Pause completed.", { outcome });
 };
 
-
 export const resumeSpotifyPlayback = async () => {
+    playbackCommandVersion += 1;
     logSpotify("Resume requested.", {
         hasPlayer: Boolean(player),
         deviceId,
@@ -768,6 +780,7 @@ export const resumeSpotifyPlayback = async () => {
 };
 
 export const seekSpotifyPlayback = async (positionMs) => {
+    playbackCommandVersion += 1;
     logSpotify("Seek requested.", {
         positionMs,
         hasPlayer: Boolean(player),

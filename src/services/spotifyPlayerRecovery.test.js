@@ -6,9 +6,12 @@ import { test } from 'node:test';
 const sourceUrl = new URL('./spotifyPlayerService.js', import.meta.url);
 const source = (await readFile(sourceUrl, 'utf8'))
   .replace('import { getSpotifyAccessToken } from "./spotifyAuthService";',
-    'const getSpotifyAccessToken = globalThis.__spotifyRecoveryTestGetToken;');
+    'const getSpotifyAccessToken = globalThis.__spotifyRecoveryTestGetToken;')
+  .replace('import { pauseEchoDevice } from "./spotifyPauseCoordinator";',
+    'const pauseEchoDevice = globalThis.__spotifyRecoveryTestPauseEchoDevice;');
 assert.ok(source.includes('globalThis.__spotifyRecoveryTestGetToken'));
 globalThis.__spotifyRecoveryTestGetToken = async () => 'mock-access-token';
+globalThis.__spotifyRecoveryTestPauseEchoDevice = async () => {}; 
 
 // Data URL permits Node to import Vite's extensionless service without
 // changing the production module or requiring a Vite installation.

@@ -211,4 +211,46 @@ describe("Spotify browser authentication — Batch 5", () => {
         assert.equal(h.client.isSpotifyConnected(), false);
     });
 
+    it("ignores a stale disconnected status received after Echo logout and a new user's token", async () => {
+        let resolveStatus;
+        let tokenName = "B";
+        const h = harness({ routes: {
+            "get /spotify/status": () => new Promise(resolve => { resolveStatus = resolve; }),
+            "get /spotify/access-token": () => validToken(`user-${tokenName}`)
+        } });
+        const stale = h.client.getSpotifyConnectionStatus();
+        h.client.disconnectSpotify();
+        assert.equal(await h.client.getSpotifyAccessToken(), "user-B");
+        resolveStatus({ data: { data: { connected: false } } });
+        await assert.rejects(stale, /Spotify session has changed/);
+        assert.equal(h.client.isSpotifyConnected(), true);
+        assert.equal(await h.client.getSpotifyAccessToken(), "user-B");
+    });
+
+    it("does not redirect an old Echo user to Spotify when Connect resolves after logout", async () => {
+        let resolveConnect;
+        const h = harness({ routes: {
+            "post /spotify/connect": () => new Promise(resolve => { resolveConnect = resolve; })
+        } });
+        const stale = h.client.startSpotifyAuthorization("/feed");
+        h.client.disconnectSpotify();
+        resolveConnect({ data: { data: { authorizationUrl: "https://accounts.spotify.com/authorize?state=old" } } });
+        await assert.rejects(stale, /Spotify session has changed/);
+        assert.deepEqual(h.urls, []);
+    });
+
+    it("an older account's disconnect completion cannot clear the new account's token", async () => {
+        let resolveDelete;
+        const h = harness({ routes: {
+            "delete /spotify/connection": () => new Promise(resolve => { resolveDelete = resolve; }),
+            "get /spotify/access-token": () => validToken("new-user-token")
+        } });
+        const oldDisconnect = h.client.disconnectSpotifyAccount();
+        h.client.disconnectSpotify();
+        assert.equal(await h.client.getSpotifyAccessToken(), "new-user-token");
+        resolveDelete({ data: { data: { disconnected: true } } });
+        await assert.rejects(oldDisconnect, /Spotify session has changed/);
+        assert.equal(await h.client.getSpotifyAccessToken(), "new-user-token");
+    });
+
 });

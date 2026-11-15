@@ -14,11 +14,72 @@ import {
 } from "../services/authService";
 
 import { disconnectSpotify } from "../services/spotifyAuthService";
+import { disconnectSpotifyPlayer } from "../services/spotifyPlayerService";
+import {
+    didEchoUserChange,
+    notifyAuthSessionChange,
+    subscribeToAuthSessionChanges
+} from "../services/authSessionSync";
+
+// Always remove browser-only Spotify credentials and the SDK player before
+// changing Echo identities. The encrypted MySQL connection is untouched.
+function clearLocalSpotifySession() {
+    disconnectSpotify();
+    disconnectSpotifyPlayer();
+}
 
 export function AuthProvider({ children }) {
 
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // A change to the shared HttpOnly Echo cookie in another tab does not
+    // automatically update this tab's React state or cached Spotify token.
+    // Reloading ensures the old runtime cannot keep controlling playback.
+    useEffect(() => {
+        let active = true;
+        let checkingSession = false;
+        const currentUserId = user?.id ?? null;
+
+        const resetTab = () => {
+            if (!active) return;
+            active = false;
+            clearLocalSpotifySession();
+            window.location.reload();
+        };
+
+        const unsubscribe = subscribeToAuthSessionChanges(window, resetTab);
+
+        // Fallback for cookie changes made elsewhere without a broadcast,
+        // such as another origin or an expired session. Do not treat network
+        // errors as logouts; only an explicit 401 proves authentication ended.
+        const verifyOnFocus = async () => {
+            if (!active || isLoading || checkingSession || currentUserId == null) return;
+            checkingSession = true;
+            try {
+                const response = await getCurrentUser();
+                if (active && didEchoUserChange(currentUserId, response.data?.id)) {
+                    resetTab();
+                }
+            } catch (error) {
+                if (active && error?.response?.status === 401) resetTab();
+            } finally {
+                checkingSession = false;
+            }
+        };
+
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "visible") void verifyOnFocus();
+        };
+        window.addEventListener("focus", verifyOnFocus);
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        return () => {
+            active = false;
+            unsubscribe();
+            window.removeEventListener("focus", verifyOnFocus);
+            document.removeEventListener("visibilitychange", onVisibilityChange);
+        };
+    }, [user?.id, isLoading]);
 
     useEffect(() => {
         const restoreSession = async () => {
@@ -44,7 +105,11 @@ export function AuthProvider({ children }) {
                 password: userData.password
             });
 
+            // A successful Echo sign-in changes the browser's auth cookie.
+            // Invalidate old local Spotify state and notify other open tabs.
+            clearLocalSpotifySession();
             setUser(response.data);
+            notifyAuthSessionChange();
 
             return {
                 success: true
@@ -73,7 +138,9 @@ export function AuthProvider({ children }) {
                 }
             );
 
+            clearLocalSpotifySession();
             setUser(response.data);
+            notifyAuthSessionChange();
 
             return {
                 success: true
@@ -141,13 +208,13 @@ export function AuthProvider({ children }) {
         try {
             await logoutUser();
     
-            // Clear local Spotify state, but preserve the
-            // user's saved Spotify connection in MySQL.
-            disconnectSpotify();
-    
+            // Spotify authorization stays encrypted in MySQL; only the
+            // current tab's token and SDK runtime are destroyed.
+            clearLocalSpotifySession();
             setUser(null);
-    
-            // Fully unload the previous Spotify SDK runtime.
+            notifyAuthSessionChange();
+
+            // A full navigation is needed for a fresh Spotify SDK runtime.
             window.location.replace("/login");
         } catch (error) {
             console.error("Failed to logout:", error);

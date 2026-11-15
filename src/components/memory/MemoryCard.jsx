@@ -37,6 +37,7 @@ function MemoryCard({ memory, isLocked = false }) {
         playerState,
         isReady,
         isConnected,
+        status: spotifyStatus,
         connectSpotify,
         playTrack,
         pause,
@@ -51,6 +52,7 @@ function MemoryCard({ memory, isLocked = false }) {
     const [playbackError, setPlaybackError] = useState("");
     const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
     const [pendingSong, setPendingSong] = useState(null);
+    const isSpotifyRestoring = !isConnected && spotifyStatus === "connecting";
 
     const currentTrackId =
         playerState?.track_window?.current_track?.id;
@@ -76,6 +78,9 @@ function MemoryCard({ memory, isLocked = false }) {
             isPlaybackLoading,
         });
 
+        // Avoid showing a reconnect modal while Echo is still checking the
+        // saved Spotify authorization after login.
+        if (isSpotifyRestoring) return;
         if (!isConnected) {
             if (!memory.song?.id || isPlaybackLoading) return;
         
@@ -156,7 +161,7 @@ function MemoryCard({ memory, isLocked = false }) {
                 error
             );
     
-            setPlaybackError("Playback couldn't start. Please try again.");
+            setPlaybackError("Spotify playback couldn't be updated. Please try again.");
         } finally {
             setIsPlaybackLoading(false);
     
@@ -506,7 +511,7 @@ function MemoryCard({ memory, isLocked = false }) {
                                 <button
                                     type="button"
                                     onClick={handlePlaybackClick}
-                                    disabled={(isConnected && !isReady) || isPlaybackLoading}
+                                    disabled={isSpotifyRestoring || (isConnected && !isReady) || isPlaybackLoading}
                                     aria-label={
                                     isPlaybackLoading
                                         ? "Loading Spotify playback"
@@ -517,7 +522,9 @@ function MemoryCard({ memory, isLocked = false }) {
                                             : "Play song"
                                     }
                                     title={
-                                    !isReady
+                                    isSpotifyRestoring
+                                        ? "Checking Spotify connection"
+                                        : !isReady
                                         ? "Spotify player is not ready"
                                         : isCurrentTrack && isPlaying
                                         ? "Pause song"

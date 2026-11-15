@@ -87,6 +87,7 @@ export function createSpotifyAuthClient({ api, storage, location, now = () => Da
     }
 
     async function startSpotifyAuthorization(returnTo = location.pathname || "/feed") {
+        const requestGeneration = generation;
         storage.setItem(RETURN_TO_KEY, getSafeReturnTo(returnTo));
         let authorizationUrl;
         try {
@@ -94,6 +95,9 @@ export function createSpotifyAuthClient({ api, storage, location, now = () => Da
             authorizationUrl = response?.data?.data?.authorizationUrl;
         } catch (error) {
             throw toError(error, "Couldn't start Spotify authorization. Please try again.");
+        }
+        if (requestGeneration !== generation) {
+            throw new Error("Spotify session has changed.");
         }
         let parsed;
         try {
@@ -134,8 +138,12 @@ export function createSpotifyAuthClient({ api, storage, location, now = () => Da
     }
 
     async function getSpotifyConnectionStatus() {
+        const requestGeneration = generation;
         try {
             const response = await api.get("/spotify/status");
+            if (requestGeneration !== generation) {
+                throw new Error("Spotify session has changed.");
+            }
             const result = response?.data?.data;
             if (typeof result?.connected !== "boolean") {
                 throw new Error("Invalid Spotify connection status.");
@@ -143,6 +151,10 @@ export function createSpotifyAuthClient({ api, storage, location, now = () => Da
             if (!result.connected) resetSpotifyAccessToken();
             return result;
         } catch (error) {
+            if (requestGeneration !== generation ||
+                error?.message === "Spotify session has changed.") {
+                throw new Error("Spotify session has changed.");
+            }
             if (error?.message === "Invalid Spotify connection status.") throw error;
             throw toError(error, "Couldn't check your Spotify connection. Please try again.");
         }
@@ -201,10 +213,19 @@ export function createSpotifyAuthClient({ api, storage, location, now = () => Da
     // Explicit Profile disconnect: remove the server-side record as well.
     async function disconnectSpotifyAccount() {
         resetSpotifyAccessToken();
+        const requestGeneration = generation;
         try {
             await api.delete("/spotify/connection");
         } catch (error) {
+            if (requestGeneration !== generation) {
+                throw new Error("Spotify session has changed.");
+            }
             throw toError(error, "Couldn't disconnect Spotify. Please try again.");
+        }
+        // A previous account's DELETE must not clear the next account's
+        // in-memory access token when the browser switches Echo users.
+        if (requestGeneration !== generation) {
+            throw new Error("Spotify session has changed.");
         }
         disconnectSpotify();
     }
