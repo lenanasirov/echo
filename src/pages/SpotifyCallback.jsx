@@ -26,6 +26,18 @@ function SpotifyCallback() {
         const state = searchParams.get("state");
         const spotifyError = searchParams.get("error");
 
+        // Authorization codes are single-use secrets. Remove them from browser
+        // history before sending them to Echo's authenticated backend callback.
+        const sanitizedUrl = new URL(window.location.href);
+        sanitizedUrl.searchParams.delete("code");
+        sanitizedUrl.searchParams.delete("state");
+        sanitizedUrl.searchParams.delete("error");
+        window.history.replaceState(
+            window.history.state,
+            "",
+            `${sanitizedUrl.pathname}${sanitizedUrl.search}${sanitizedUrl.hash}`
+        );
+
         const finishAuthorization = async () => {
             if (spotifyError) {
                 setError(

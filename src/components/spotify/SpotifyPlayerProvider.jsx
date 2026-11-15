@@ -14,9 +14,11 @@ import {
     seekSpotifyPlayback
 } from "../../services/spotifyPlayerService";
 import {
-    isSpotifyConnected,
+    getSpotifyConnectionStatus,
+    getSpotifyAccessToken,
+    resetSpotifyAccessToken,
     startSpotifyAuthorization,
-    disconnectSpotify as clearSpotifyConnection,
+    disconnectSpotifyAccount,
 } from "../../services/spotifyAuthService";
 import SpotifyPlayerContext from "./SpotifyPlayerContext";
 
@@ -25,15 +27,57 @@ export function SpotifyPlayerProvider({ children }) {
     const [playerState, setPlayerState] = useState(null);
     const [error, setError] = useState(null);
     const [isReady, setIsReady] = useState(false);
-    const [status, setStatus] = useState(
-        () => isSpotifyConnected() ? "connecting" : "disconnected"
-    );
-    const [isConnected, setIsConnected] = useState(
-        () => isSpotifyConnected()
-    );
+    // Database connection state is asynchronous, not browser sessionStorage.
+    const [status, setStatus] = useState("connecting");
+    const [isConnected, setIsConnected] = useState(false);
 
     const location = useLocation();
     const previousPathname = useRef(location.pathname);
+
+    useEffect(() => {
+        let active = true;
+        // A fresh provider instance must never inherit another Echo user's
+        // token, including during a same-browser account switch.
+        resetSpotifyAccessToken();
+
+        const restoreSpotify = async () => {
+            try {
+                const connection = await getSpotifyConnectionStatus();
+                if (!active) return;
+                if (!connection.connected) {
+                    setIsConnected(false);
+                    setStatus("disconnected");
+                    return;
+                }
+
+                // Confirm the stored authorization can actually supply a token
+                // before the existing SDK initialization effect runs.
+                await getSpotifyAccessToken();
+                if (!active) return;
+                setError(null);
+                setStatus("connecting");
+                setIsConnected(true);
+            } catch (restoreError) {
+                if (!active) return;
+                setIsConnected(false);
+                setIsReady(false);
+                if (restoreError.code === "spotify_reauthorization_required") {
+                    setStatus("disconnected");
+                    setError(null);
+                } else {
+                    setStatus("error");
+                    setError(restoreError.message || "Couldn't restore Spotify.");
+                }
+            }
+        };
+        restoreSpotify();
+
+        return () => {
+            active = false;
+            resetSpotifyAccessToken();
+            disconnectSpotifyPlayer();
+        };
+    }, []);
 
     const handleError = useCallback((playerError) => {
         console.error(
@@ -194,9 +238,17 @@ export function SpotifyPlayerProvider({ children }) {
     }, [location.pathname, location.search, location.hash]);
     
     const disconnect = useCallback(async () => {
-        clearSpotifyConnection();
+        // Unlike Echo logout, an explicit Profile disconnect must revoke
+        // the saved connection in MySQL. Do not report success if it fails.
+        try {
+            await disconnectSpotifyAccount();
+        } catch (disconnectError) {
+            setError(disconnectError.message);
+            setStatus("error");
+            throw disconnectError;
+        }
         disconnectSpotifyPlayer();
-    
+
         setIsConnected(false);
         setDeviceId(null);
         setPlayerState(null);

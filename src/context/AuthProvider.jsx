@@ -136,16 +136,24 @@ export function AuthProvider({ children }) {
         });
     };
 
+
     const logout = async () => {
-        try{
+        try {
             await logoutUser();
+    
+            // Clear local Spotify state, but preserve the
+            // user's saved Spotify connection in MySQL.
+            disconnectSpotify();
+    
+            setUser(null);
+    
+            // Fully unload the previous Spotify SDK runtime.
+            window.location.replace("/login");
         } catch (error) {
             console.error("Failed to logout:", error);
-        } finally {
-            disconnectSpotify();
-            setUser(null);
         }
     };
+    
 
     return (
         <AuthContext.Provider

@@ -10,6 +10,7 @@ let initializationGeneration = null;
 let playerGeneration = null;
 let lifecycleGeneration = 0;
 let activeCallbacks = {};
+let deviceRecoveryPromise = null;
 
 const logSpotify = (...args) => {
     console.info("[Echo Spotify]", ...args);
@@ -366,6 +367,74 @@ export const initializeSpotifyPlayer = async (callbacks = {}) => {
 
 export const getSpotifyPlayer = () => player;
 
+// The SDK may retain a device ID that Spotify Connect no longer recognizes
+// after Echo logout/login. Build a NEW local SDK instance; never transfer
+// to another device based only on its display name (which is not unique).
+export const recoverSpotifyPlayer = () => {
+    if (deviceRecoveryPromise) {
+        return deviceRecoveryPromise;
+    }
+
+    const providerCallbacks = activeCallbacks;
+    const task = (async () => {
+        warnSpotify("Rebuilding the Echo SDK player after a stale device ID.");
+        disconnectSpotifyPlayer();
+
+        let resolveReady;
+        let rejectReady;
+        let timer;
+        let settled = false;
+        const ready = new Promise((resolve, reject) => {
+            resolveReady = resolve;
+            rejectReady = reject;
+        });
+        const settle = (callback, value) => {
+            if (settled) return;
+            settled = true;
+            callback(value);
+        };
+
+        const callbacks = {
+            ...providerCallbacks,
+            onReady: (id) => {
+                providerCallbacks.onReady?.(id);
+                settle(resolveReady, id);
+            },
+            onError: (error) => {
+                providerCallbacks.onError?.(error);
+                settle(rejectReady, error);
+            },
+        };
+
+        const timeout = new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(
+                "Echo's Spotify player did not become ready. Please try again."
+            )), 12000);
+        });
+
+        try {
+            // Connect resolving true does not itself mean the ready event
+            // has fired. Wait for BOTH, with one bounded timeout.
+            const [, id] = await Promise.race([
+                Promise.all([initializeSpotifyPlayer(callbacks), ready]),
+                timeout,
+            ]);
+            logSpotify("Rebuilt player is ready.", { deviceId: id });
+            return id;
+        } finally {
+            clearTimeout(timer);
+        }
+    })();
+
+    deviceRecoveryPromise = task;
+    // Release the single-flight lock after both success and failure.
+    void task.then(
+        () => { if (deviceRecoveryPromise === task) deviceRecoveryPromise = null; },
+        () => { if (deviceRecoveryPromise === task) deviceRecoveryPromise = null; }
+    );
+    return task;
+};
+
 export const activateSpotifyPlayer = async () => {
     logSpotify("Browser audio activation requested.", {
         hasPlayer: Boolean(player),
@@ -417,7 +486,7 @@ export const disconnectSpotifyPlayer = () => {
     });
 };
 
-export const playSpotifyTrack = async (trackId) => {
+export const playSpotifyTrack = async (trackId, recoveryAttempt = 0) => {
     const targetDeviceId = deviceId;
 
     logSpotify("Track playback requested.", {
@@ -475,29 +544,122 @@ export const playSpotifyTrack = async (trackId) => {
         );
     }
 
+    // The Web Playback SDK can emit "ready" before Spotify Connect's
+    // available-devices API includes its new device. This is especially
+    // noticeable after restoring a saved Spotify connection on login.
+    // Use the *current* SDK device ID and wait briefly for it to register.
+    const playbackPlayer = player;
+    const playbackGeneration = lifecycleGeneration;
+    const assertCurrentPlaybackDevice = () => {
+        if (
+            player !== playbackPlayer ||
+            lifecycleGeneration !== playbackGeneration ||
+            deviceId !== targetDeviceId
+        ) {
+            throw new Error(
+                "Echo's Spotify player changed. Please try playing the song again."
+            );
+        }
+    };
+
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let echoDeviceVisible = devicesData.devices?.some(
+        (device) => device.id === targetDeviceId
+    ) ?? false;
+
+    // Only poll when the SDK's device ID was missing from the initial list.
+    // Bound the delay; don't retry 401/403/429 or other API errors.
+    if (!echoDeviceVisible) {
+        warnSpotify("Echo Web Player is not in Spotify's device list yet.", {
+            deviceId: targetDeviceId,
+        });
+
+        for (let attempt = 1; attempt <= 6; attempt += 1) {
+            await sleep(500);
+            assertCurrentPlaybackDevice();
+
+            const retryResponse = await fetch(
+                "https://api.spotify.com/v1/me/player/devices",
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                }
+            );
+
+            if (!retryResponse.ok) {
+                warnSpotify("Spotify device discovery failed during retry.", {
+                    status: retryResponse.status,
+                });
+                break;
+            }
+
+            const retryData = await retryResponse.json().catch(() => ({}));
+            echoDeviceVisible = retryData.devices?.some(
+                (device) => device.id === targetDeviceId
+            ) ?? false;
+
+            if (echoDeviceVisible) {
+                logSpotify("Echo Web Player appeared in Spotify's device list.", {
+                    attempt,
+                    deviceId: targetDeviceId,
+                });
+                break;
+            }
+        }
+    }
+
+    // Do not assume a device ID remains usable merely because the SDK once
+    // emitted it. Still attempt transfer if discovery didn't list the device:
+    // Spotify documents that some devices may not appear in this endpoint.
     logSpotify("Requesting playback transfer to Echo.", {
         deviceId: targetDeviceId,
+        visibleInSpotifyDevices: echoDeviceVisible,
     });
 
-    const transferResponse = await fetch(
-        "https://api.spotify.com/v1/me/player",
-        {
-            method: "PUT",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                device_ids: [targetDeviceId],
-                play: false,
-            }),
-        }
-    );
+    let transferResponse;
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+        assertCurrentPlaybackDevice();
+
+        transferResponse = await fetch(
+            "https://api.spotify.com/v1/me/player",
+            {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    device_ids: [targetDeviceId],
+                    play: false,
+                }),
+            }
+        );
+
+        // A newly registered Web Playback SDK device can briefly return 404.
+        // Retry once, and only for 404; never replay other errors blindly.
+        if (transferResponse.status !== 404 || attempt === 2) break;
+
+        warnSpotify("Spotify couldn't find the Echo device; retrying once.", {
+            deviceId: targetDeviceId,
+        });
+        await sleep(750);
+    }
 
     logSpotify("Playback transfer response.", {
         status: transferResponse.status,
         ok: transferResponse.ok,
     });
+
+    // A second 404 after discovery/retry means the current local SDK device
+    // is unusable. Rebuild it once, await its ready event, and retry the song.
+    if (transferResponse.status === 404 && recoveryAttempt === 0) {
+        warnSpotify("SDK device was not found; recreating the local player.", {
+            rejectedDeviceId: targetDeviceId,
+        });
+        await recoverSpotifyPlayer();
+        return playSpotifyTrack(trackId, 1);
+    }
 
     if (!transferResponse.ok) {
         const data = await transferResponse.json().catch(() => ({}));
