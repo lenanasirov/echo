@@ -133,6 +133,50 @@ describe("Spotify connections", () => {
         assert.equal(await service.getUserSpotifyConnection(403), null);
     });
 
+    it("reads an internal refresh-token snapshot with a ciphertext version", async () => {
+        const { service } = createHarness();
+        await service.upsertUserSpotifyConnection(450, { refreshToken: REFRESH_TOKEN });
+        const snapshot = await service.getUserSpotifyRefreshTokenSnapshot(450);
+        assert.equal(snapshot.refreshToken, REFRESH_TOKEN);
+        assert.ok(snapshot.encryptedVersion.startsWith("v1:"));
+        assert.equal(snapshot.encryptedVersion.includes(REFRESH_TOKEN), false);
+        assert.equal(await service.getUserSpotifyRefreshTokenSnapshot(9999), null);
+    });
+
+    it("conditionally rotates an encrypted refresh token and rejects stale versions", async () => {
+        const { service, connections } = createHarness();
+        await service.upsertUserSpotifyConnection(451, { refreshToken: REFRESH_TOKEN });
+        const old = await service.getUserSpotifyRefreshTokenSnapshot(451);
+        const rotated = await service.rotateUserSpotifyRefreshTokenIfUnchanged(
+            451, old.encryptedVersion, "rotated-refresh-token"
+        );
+        assert.ok(rotated.encryptedVersion.startsWith("v1:"));
+        assert.notEqual(rotated.encryptedVersion, old.encryptedVersion);
+        assert.equal(await service.getUserSpotifyRefreshToken(451), "rotated-refresh-token");
+        assert.equal(connections.get("451").refreshTokenEncrypted.includes("rotated-refresh-token"), false);
+        assert.equal(
+            await service.rotateUserSpotifyRefreshTokenIfUnchanged(451, old.encryptedVersion, "stale"),
+            null
+        );
+        assert.equal(await service.getUserSpotifyRefreshToken(451), "rotated-refresh-token");
+    });
+
+    it("conditionally deletes only if the refresh token has not been replaced", async () => {
+        const { service } = createHarness();
+        await service.upsertUserSpotifyConnection(452, { refreshToken: REFRESH_TOKEN });
+        const old = await service.getUserSpotifyRefreshTokenSnapshot(452);
+        await service.upsertUserSpotifyConnection(452, { refreshToken: OTHER_REFRESH_TOKEN });
+        assert.equal(
+            await service.deleteUserSpotifyConnectionIfUnchanged(452, old.encryptedVersion), false
+        );
+        assert.equal(await service.getUserSpotifyRefreshToken(452), OTHER_REFRESH_TOKEN);
+        const current = await service.getUserSpotifyRefreshTokenSnapshot(452);
+        assert.equal(
+            await service.deleteUserSpotifyConnectionIfUnchanged(452, current.encryptedVersion), true
+        );
+        assert.equal(await service.getUserSpotifyConnection(452), null);
+    });
+
     it("deletes a connection by Echo user ID only", async () => {
         const { service } = createHarness();
 
@@ -414,6 +458,27 @@ function createMemoryQuery({ connections, oauthStates, statements, key }) {
             });
 
             return [{ affectedRows: existing ? 2 : 1 }];
+        }
+
+        if (sql.includes("UPDATE user_spotify_connections")) {
+            const [nextEncrypted, userId, expectedEncrypted] = params;
+            const current = connections.get(String(userId));
+            if (!current || current.refreshTokenEncrypted !== expectedEncrypted) {
+                return [{ affectedRows: 0 }];
+            }
+            current.refreshTokenEncrypted = nextEncrypted;
+            return [{ affectedRows: 1 }];
+        }
+
+        if (sql.includes("DELETE FROM user_spotify_connections") &&
+            sql.includes("refresh_token_encrypted")) {
+            const [userId, expectedEncrypted] = params;
+            const current = connections.get(String(userId));
+            if (!current || current.refreshTokenEncrypted !== expectedEncrypted) {
+                return [{ affectedRows: 0 }];
+            }
+            connections.delete(String(userId));
+            return [{ affectedRows: 1 }];
         }
 
         if (sql.includes("DELETE FROM user_spotify_connections")) {

@@ -111,6 +111,61 @@ export function createSpotifyConnectionService({ query, encryptionKey, getConnec
         return decryptRefreshToken(encryptedRefreshToken, encryptionKey);
     }
 
+    /**
+     * Internal snapshot for backend refresh only. The encryptedVersion is the
+     * EXACT ciphertext stored in MySQL, used for compare-and-swap guards.
+     * Never serialize this object in an API response or log it.
+     */
+    async function getUserSpotifyRefreshTokenSnapshot(userId) {
+        const echoUserId = assertEchoUserId(userId);
+        const [rows] = await query(
+            `
+            SELECT refresh_token_encrypted
+            FROM user_spotify_connections
+            WHERE user_id = ?
+            `,
+            [echoUserId]
+        );
+        const encryptedVersion = rows[0]?.refresh_token_encrypted;
+        if (!encryptedVersion) return null;
+        return {
+            refreshToken: decryptRefreshToken(encryptedVersion, encryptionKey),
+            encryptedVersion
+        };
+    }
+
+    /** Replace a token only if no other session changed the stored connection. */
+    async function rotateUserSpotifyRefreshTokenIfUnchanged(userId, previousEncryptedVersion, nextRefreshToken) {
+        const echoUserId = assertEchoUserId(userId);
+        const expected = assertRequiredString(previousEncryptedVersion, "Spotify token version");
+        const ciphertext = encryptRefreshToken(nextRefreshToken, encryptionKey);
+        const [result] = await query(
+            `
+            UPDATE user_spotify_connections
+            SET refresh_token_encrypted = ?
+            WHERE user_id = ? AND refresh_token_encrypted = ?
+            `,
+            [ciphertext, echoUserId, expected]
+        );
+        return Number(result?.affectedRows) === 1
+            ? { encryptedVersion: ciphertext }
+            : null;
+    }
+
+    /** Conditional invalid_grant cleanup: never remove a newer authorization. */
+    async function deleteUserSpotifyConnectionIfUnchanged(userId, previousEncryptedVersion) {
+        const echoUserId = assertEchoUserId(userId);
+        const expected = assertRequiredString(previousEncryptedVersion, "Spotify token version");
+        const [result] = await query(
+            `
+            DELETE FROM user_spotify_connections
+            WHERE user_id = ? AND refresh_token_encrypted = ?
+            `,
+            [echoUserId, expected]
+        );
+        return Number(result?.affectedRows) === 1;
+    }
+
     async function deleteUserSpotifyConnection(userId) {
         const echoUserId = assertEchoUserId(userId);
         const [result] = await query(
@@ -289,6 +344,9 @@ export function createSpotifyConnectionService({ query, encryptionKey, getConnec
         upsertUserSpotifyConnection,
         getUserSpotifyConnection,
         getUserSpotifyRefreshToken,
+        getUserSpotifyRefreshTokenSnapshot,
+        rotateUserSpotifyRefreshTokenIfUnchanged,
+        deleteUserSpotifyConnectionIfUnchanged,
         deleteUserSpotifyConnection,
         saveUserSpotifyOAuthState,
         consumeUserSpotifyOAuthState

@@ -3,6 +3,8 @@ import { searchTracks } from "../controllers/spotifyController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import { createSpotifyOAuthService } from "../services/spotifyOAuthService.js";
 import { createSpotifyOAuthController } from "../controllers/spotifyOAuthController.js";
+import { createSpotifySessionService } from "../services/spotifySessionService.js";
+import { createSpotifySessionController } from "../controllers/spotifySessionController.js";
 
 const router = Router();
 
@@ -32,6 +34,18 @@ export function registerSpotifyOAuthRoutes({ connectionService, clientId, redire
 
     router.post("/connect", authenticate, controller.connect);
     router.post("/callback", authenticate, controller.callback);
+
+    // Batch 4: owner-only Spotify session endpoints. Keep /search public.
+    const sessionService = createSpotifySessionService({
+        connectionService,
+        clientId,
+        ...(fetchImpl ? { fetchImpl } : {})
+    });
+    const sessionController = createSpotifySessionController(sessionService);
+    router.get("/status", authenticate, sessionController.status);
+    router.get("/access-token", authenticate, sessionController.accessToken);
+    router.delete("/connection", authenticate, sessionController.disconnect);
+
     oauthRoutesRegistered = true;
 }
 
