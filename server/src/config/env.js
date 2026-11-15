@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 
+import { parseSpotifyTokenEncryptionKey } from "../services/spotifyTokenCrypto.js";
+
 dotenv.config();
 
 const env = {
@@ -21,7 +23,12 @@ const env = {
 
     spotify: {
         clientId: process.env.SPOTIFY_CLIENT_ID,
-        clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+        clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+        redirectUri: process.env.SPOTIFY_REDIRECT_URI,
+        userScopes: process.env.SPOTIFY_USER_SCOPES,
+        tokenEncryptionKey: parseSpotifyTokenEncryptionKey(
+            process.env.SPOTIFY_TOKEN_ENCRYPTION_KEY
+        )
     },
 };
 

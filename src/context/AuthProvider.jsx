@@ -13,6 +13,8 @@ import {
     logoutUser
 } from "../services/authService";
 
+import { disconnectSpotify } from "../services/spotifyAuthService";
+
 export function AuthProvider({ children }) {
 
     const [user, setUser] = useState(null);
@@ -140,6 +142,7 @@ export function AuthProvider({ children }) {
         } catch (error) {
             console.error("Failed to logout:", error);
         } finally {
+            disconnectSpotify();
             setUser(null);
         }
     };

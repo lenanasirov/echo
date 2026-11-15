@@ -220,6 +220,10 @@ export const isSpotifyConnected = () => {
 
 export const disconnectSpotify = () => {
     clearTokens();
+    sessionStorage.removeItem(STORAGE_KEYS.pendingPlayback);
+    sessionStorage.removeItem(STORAGE_KEYS.verifier);
+    sessionStorage.removeItem(STORAGE_KEYS.state);
+    sessionStorage.removeItem(STORAGE_KEYS.returnTo);
 };
 
 const getSafeReturnTo = (path) => {

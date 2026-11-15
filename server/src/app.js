@@ -3,6 +3,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 
 import pool from "./db/connection.js";
+import env from "./config/env.js";
+import { createSpotifyConnectionService } from "./services/spotifyConnectionService.js";
+import { registerSpotifyOAuthRoutes } from "./routes/spotifyRoutes.js";
 
 import userRoutes from "./routes/userRoutes.js";
 import memoryRoutes from "./routes/memoryRoutes.js";
@@ -52,6 +55,21 @@ app.get("/api/health/db", async (req, res) => {
             message: "Database connection failed"
         });
     }
+});
+
+// Batch 3: wire Spotify OAuth once to the authenticated Echo user and MySQL pool.
+// The connection repository encrypts refresh tokens before storing them.
+const spotifyConnectionService = createSpotifyConnectionService({
+    query: (...args) => pool.query(...args),
+    getConnection: () => pool.getConnection(),
+    encryptionKey: env.spotify.tokenEncryptionKey
+});
+
+registerSpotifyOAuthRoutes({
+    connectionService: spotifyConnectionService,
+    clientId: env.spotify.clientId,
+    redirectUri: env.spotify.redirectUri,
+    scopes: env.spotify.userScopes
 });
 
 // API routes
